@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  button,
+  input,
+  select,
+  textarea {
+    @apply appearance-none bg-transparent border-0 outline-none;
+  }
+}
+
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .all-\[unset\] {
+    all: unset;
+  }
+}
+
+:root {
+  --ditto-colors-light-dark-active-green: rgba(0, 211, 70, 1);
+  --ditto-colors-light-dark-ditto-background-white: rgba(255, 255, 255, 1);
+  --ditto-colors-light-dark-ditto-border-grey: rgba(210, 210, 227, 1);
+  --ditto-colors-light-dark-ditto-inactive-variant: rgba(170, 170, 204, 1);
+  --ditto-colors-light-dark-ditto-labels-yellow: rgba(246, 196, 67, 1);
+  --ditto-colors-light-dark-ditto-light-blue: rgba(38, 128, 235, 1);
+  --ditto-colors-light-dark-ditto-light-grey: rgba(249, 249, 255, 1);
+  --ditto-colors-light-dark-ditto-mid-button-grey: rgba(242, 242, 253, 1);
+  --ditto-colors-light-dark-ditto-orange: rgba(255, 177, 0, 1);
+  --ditto-colors-light-dark-ditto-pro-green: rgba(0, 255, 153, 1);
+  --ditto-colors-light-dark-ditto-purple: rgba(95, 31, 255, 1);
+  --ditto-colors-light-dark-ditto-red: rgba(236, 5, 21, 1);
+  --ditto-colors-light-dark-ditto-starter-puple: rgba(149, 95, 255, 1);
+  --ditto-colors-light-dark-ditto-subtext-grey: rgba(98, 105, 132, 1);
+  --ditto-colors-light-dark-ditto-text-fill: rgba(16, 31, 60, 1);
+  --ditto-colors-light-dark-ditto-text-prompt: rgba(177, 177, 195, 1);
+  --poppins-bold-11px-font-family: "Poppins", Helvetica;
+  --poppins-bold-11px-font-size: 11px;
+  --poppins-bold-11px-font-style: normal;
+  --poppins-bold-11px-font-weight: 700;
+  --poppins-bold-11px-letter-spacing: -0.33px;
+  --poppins-bold-11px-line-height: normal;
+}
+
+/*
+
+To enable a theme in your HTML, simply add one of the following data attributes to an HTML element, like so:
+
+<body data-ditto-colors-light-dark-mode="light">
+    <!-- the rest of your content -->
+</body>
+
+You can apply the theme on any DOM node, not just the `body`
+
+*/
+
+[data-ditto-colors-light-dark-mode="light"] {
+  --ditto-colors-light-dark-ditto-background-white: rgba(255, 255, 255, 1);
+  --ditto-colors-light-dark-ditto-border-grey: rgba(210, 210, 227, 1);
+  --ditto-colors-light-dark-ditto-inactive-variant: rgba(170, 170, 204, 1);
+  --ditto-colors-light-dark-ditto-light-blue: rgba(38, 128, 235, 1);
+  --ditto-colors-light-dark-ditto-light-grey: rgba(249, 249, 255, 1);
+  --ditto-colors-light-dark-ditto-purple: rgba(95, 31, 255, 1);
+  --ditto-colors-light-dark-ditto-red: rgba(236, 5, 21, 1);
+  --ditto-colors-light-dark-ditto-starter-puple: rgba(149, 95, 255, 1);
+  --ditto-colors-light-dark-ditto-subtext-grey: rgba(98, 105, 132, 1);
+  --ditto-colors-light-dark-ditto-text-fill: rgba(16, 31, 60, 1);
+}
+
+[data-ditto-colors-light-dark-mode="dark"] {
+  --ditto-colors-light-dark-ditto-background-white: rgba(31, 31, 31, 1);
+  --ditto-colors-light-dark-ditto-border-grey: rgba(98, 105, 132, 1);
+  --ditto-colors-light-dark-ditto-inactive-variant: rgba(170, 170, 204, 1);
+  --ditto-colors-light-dark-ditto-light-blue: rgba(106, 174, 255, 1);
+  --ditto-colors-light-dark-ditto-light-grey: rgba(49, 49, 53, 1);
+  --ditto-colors-light-dark-ditto-purple: rgba(158, 119, 255, 1);
+  --ditto-colors-light-dark-ditto-red: rgba(255, 68, 71, 1);
+  --ditto-colors-light-dark-ditto-starter-puple: rgba(149, 95, 255, 1);
+  --ditto-colors-light-dark-ditto-subtext-grey: rgba(210, 210, 227, 1);
+  --ditto-colors-light-dark-ditto-text-fill: rgba(255, 255, 255, 1);
+}
+
+[data-ditto-colors-light-dark-mode="active"] {
+  --ditto-colors-light-dark-ditto-background-white: rgba(31, 31, 31, 1);
+  --ditto-colors-light-dark-ditto-border-grey: rgba(98, 105, 132, 1);
+  --ditto-colors-light-dark-ditto-inactive-variant: rgba(95, 31, 255, 1);
+  --ditto-colors-light-dark-ditto-light-blue: rgba(106, 174, 255, 1);
+  --ditto-colors-light-dark-ditto-light-grey: rgba(49, 49, 53, 1);
+  --ditto-colors-light-dark-ditto-purple: rgba(158, 119, 255, 1);
+  --ditto-colors-light-dark-ditto-red: rgba(255, 255, 255, 1);
+  --ditto-colors-light-dark-ditto-starter-puple: rgba(95, 31, 255, 1);
+  --ditto-colors-light-dark-ditto-subtext-grey: rgba(210, 210, 227, 1);
+  --ditto-colors-light-dark-ditto-text-fill: rgba(255, 255, 255, 1);
+}
+
+:root {
+  --animate-spin: spin 1s linear infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s var(--animation-delay, 0s) ease forwards;
+}
+
+.animate-fade-up {
+  animation: fade-up 1s var(--animation-delay, 0s) ease forwards;
+}
+
+.animate-marquee {
+  animation: marquee var(--duration) infinite linear;
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical var(--duration) linear infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 8s infinite;
+}
+
+.animate-spin {
+  animation: var(--animate-spin);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes image-glow {
+  0% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.74, 0.25, 0.76, 1);
+  }
+
+  10% {
+    opacity: 0.7;
+    animation-timing-function: cubic-bezier(0.12, 0.01, 0.08, 0.99);
+  }
+
+  to {
+    opacity: 0.4;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  90%,
+  to {
+    background-position: calc(-100% - var(--shimmer-width)) 0;
+  }
+
+  30%,
+  60% {
+    background-position: calc(100% + var(--shimmer-width)) 0;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate(0);
+  }
+
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  0% {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
