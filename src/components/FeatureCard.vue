@@ -1,8 +1,8 @@
 <template>
   <div
     @click="!disabled ? $emit('toggle') : undefined"
-    class="rounded-2xl border border-[#D2D2E3] bg-[#F9F9FF] p-3 sm:p-4 overflow-visible"
-    :class="disabled ? 'opacity-70' : 'cursor-pointer hover:border-[#2680EB]'"
+    class="rounded-2xl border border-faded-grey bg-lighter-grey p-3 sm:p-4 overflow-visible"
+    :class="disabled ? 'opacity-70' : 'cursor-pointer hover:border-brand-secondary'"
   >
     <div class="flex items-start sm:items-center justify-between gap-3 sm:gap-4">
       <div class="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
@@ -11,34 +11,34 @@
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 flex-wrap">
-            <h3 class="text-[14px] sm:text-[16px] font-bold text-[#101F3C] font-['Satoshi-Regular']">
+            <h3 class="text-sm sm:text-base font-semibold text-ditto-blue font-satoshi">
               {{ title }}
             </h3>
             <PlanBadge v-if="badge" :text="badge" :variant="badgeVariant" />
           </div>
-          <p class="mt-1 text-[13px] sm:text-[14px] text-[#626984] font-['Satoshi-Regular'] leading-relaxed">
+          <p class="mt-1 text-[13px] sm:text-sm text-ditto-grey font-satoshi leading-relaxed">
             {{ description }}
           </p>
           <a
             v-if="disabled && disabledMessage && disabledMessageIsLink"
             href="#"
-            class="mt-1 block text-xs text-[#955FFF] font-['Satoshi-Regular'] underline hover:text-[#7B4FD9]"
+            class="mt-1 block text-xs text-ditto-starter font-satoshi underline hover:opacity-80"
           >
             {{ disabledMessage }}
           </a>
           <p
             v-else-if="disabled && disabledMessage"
-            class="mt-1 text-xs text-[#626984] font-['Satoshi-Regular'] italic"
+            class="mt-1 text-xs text-ditto-grey font-satoshi italic"
           >
             {{ disabledMessage }}
           </p>
         </div>
       </div>
       <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-        <span v-if="isFree" class="text-[13px] sm:text-[14px] font-bold text-[#00FF99] font-['Satoshi-Regular']">
+        <span v-if="isFree" class="text-[13px] sm:text-sm font-bold text-ditto-pro font-satoshi">
           Free
         </span>
-        <span v-else-if="price" class="text-[13px] sm:text-[14px] font-bold text-[#101F3C] font-['Satoshi-Regular']">
+        <span v-else-if="price" class="text-[13px] sm:text-sm font-bold text-ditto-blue font-satoshi">
           {{ price }}
         </span>
         <CircleCheck :checked="checked" :disabled="disabled" @click="$emit('toggle')" />

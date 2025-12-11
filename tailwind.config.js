@@ -4,6 +4,26 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Ditto Framework Colors
+        "ditto-black": "var(--ditto-black)",
+        "ditto-grey": "var(--ditto-grey)",
+        "ditto-blue": "var(--blue)",
+        "ditto-purple": "var(--brand-primary)",
+        "ditto-starter": "var(--ditto-starter)",
+        "ditto-pro": "var(--ditto-pro)",
+        "ditto-label": "var(--ditto-label)",
+        "faded-grey": "var(--faded-grey)",
+        "light-grey": "var(--light-grey)",
+        "lighter-grey": "var(--lighter-grey)",
+        "medium-grey": "var(--medium-grey)",
+        "dark-grey": "var(--dark-grey)",
+        "brand-border": "var(--brand-border)",
+        "brand-secondary": "var(--brand-secondary)",
+        "success": "var(--success)",
+        "error": "var(--error)",
+        "warning": "var(--warning)",
+        "info": "var(--info)",
+        // Legacy Anima tokens
         "ditto-colors-light-dark-active-green":
           "var(--ditto-colors-light-dark-active-green)",
         "ditto-colors-light-dark-ditto-background-white":
@@ -38,7 +58,23 @@ module.exports = {
           "var(--ditto-colors-light-dark-ditto-text-prompt)",
       },
       fontFamily: {
-        "poppins-bold-11px": "var(--poppins-bold-11px-font-family)",
+        "satoshi": ["Satoshi", "Helvetica", "Arial", "sans-serif"],
+        "poppins": ["Poppins", "Helvetica", "Arial", "sans-serif"],
+      },
+      fontSize: {
+        // Ditto Framework Typography
+        "h1": ["3rem", { lineHeight: "3.5rem", letterSpacing: "-0.04em" }],
+        "h2": ["1.75rem", { lineHeight: "2.25rem", letterSpacing: "-1px" }],
+        "h3": ["1.5rem", { lineHeight: "2rem" }],
+        "h4": ["1.125rem", { lineHeight: "1.25rem" }],
+        "h5": ["0.875rem", { lineHeight: "1.3125rem", letterSpacing: "2px" }],
+        "h6": ["0.625rem", { lineHeight: "1rem", letterSpacing: "0.1em" }],
+        "body": ["1rem", { lineHeight: "1.65rem" }],
+        "lead": ["1.25rem", { lineHeight: "2rem" }],
+      },
+      borderRadius: {
+        "button": "2rem",
+        "card": "1.25rem",
       },
     },
   },

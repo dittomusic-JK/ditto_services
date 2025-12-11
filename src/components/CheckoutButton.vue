@@ -2,8 +2,8 @@
   <button
     @click="$emit('click')"
     :disabled="itemCount === 0"
-    class="w-full py-4 rounded-xl text-white font-semibold text-base transition-all flex items-center justify-center gap-2"
-    :class="itemCount > 0 ? 'bg-[#6c5ce7] hover:bg-[#5b4cdb] cursor-pointer' : 'bg-[#d1d5db] cursor-not-allowed'"
+    class="w-full py-4 rounded-button text-white font-semibold text-base font-satoshi transition-all flex items-center justify-center gap-2"
+    :class="itemCount > 0 ? 'bg-ditto-purple hover:opacity-90 cursor-pointer' : 'bg-faded-grey cursor-not-allowed'"
   >
     <CartIcon />
     <span v-if="itemCount > 0">

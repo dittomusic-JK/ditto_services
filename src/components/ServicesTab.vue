@@ -113,7 +113,7 @@
           :price="includesYouTube ? undefined : '£10'"
           @toggle="includesYouTube ? (youTubeEnabled = !youTubeEnabled) : (youTubeSelected = !youTubeSelected)"
         >
-          <template #icon><img src="/images/YoutubeContent.svg" alt="YouTube" class="w-8 h-8" /></template>
+<template #icon><img src="/images/YoutubeShorts.svg" alt="YouTube" class="w-8 h-8" /></template>
         </FeatureCard>
 
         <!-- Audio Fingerprint Services -->
@@ -250,12 +250,12 @@ const includesYouTube = computed(() => isPro.value || isLabel.value || isDittoPl
 const includesFingerprint = computed(() => isPro.value || isLabel.value || isDittoPlus.value)
 const includesBeatport = computed(() => isDittoPlus.value)
 
-// State for toggling included features
-const autoReleaseEnabled = ref(true)
-const releaseProtectionEnabled = ref(true)
-const youTubeEnabled = ref(true)
-const fingerprintEnabled = ref(true)
-const beatportEnabled = ref(true)
+// State for toggling included features (user must opt-in even if free)
+const autoReleaseEnabled = ref(false)
+const releaseProtectionEnabled = ref(false)
+const youTubeEnabled = ref(false)
+const fingerprintEnabled = ref(false)
+const beatportEnabled = ref(false)
 
 // Fingerprint providers
 const fingerprintProviders = reactive([

@@ -21,6 +21,58 @@
 }
 
 :root {
+  /* Ditto Framework Colors */
+  --pink: #ff006e;
+  --mint: #12c1ae;
+  --blue: #101f3c;
+  --blue-alternate: #287ef7;
+  --dark-indigo: #080727;
+  --indigo: #3a1bb9;
+  --light-indigo: #5f1fff;
+  --soft-red: #d92121;
+  --purple: #8640f4;
+  --light-purple: #d9c1ff;
+  --ditto-black: #111;
+  --ditto-grey: #626984;
+  --ditto-starter: #955fff;
+  --ditto-pro: #0f9;
+  --ditto-label: #f6c443;
+  --white: #fff;
+  --darker-grey: #44444c;
+  --dark-grey: #9595a7;
+  --darkening-grey: #c7c4d6;
+  --faded-grey: #d2d2e3;
+  --medium-grey: #dddde7;
+  --light-grey: #efeffc;
+  --lighter-grey: #f9f9ff;
+  --error: #ee404c;
+  --warning: #ffb100;
+  --success: #00e785;
+  --info: #287ef7;
+  --strong-warning: #de6a3f;
+
+  /* Typography */
+  --brand-font-body: "Satoshi", Helvetica, Arial, sans-serif;
+  --brand-font-heading: "Poppins", Helvetica, Arial, sans-serif;
+  --brand-body: #111;
+  --brand-body-light: #626984;
+  --brand-border: #d2d2e3;
+  --brand-inactive: #aac;
+  --brand-primary: #6c5ce7;
+  --brand-secondary: #287ef7;
+
+  /* Button styling */
+  --button-border-radius: 2rem;
+  --button-border-size: 2px;
+
+  /* Input styling */
+  --input-color: #101f3c;
+  --input-border-color: #d2d2e3;
+  --input-disabled-bg: #f9f9ff;
+  --input-disabled-color: #d2d2e3;
+  --label-color: #101f3c;
+
+  /* Legacy Anima tokens (mapped to framework) */
   --ditto-colors-light-dark-active-green: rgba(0, 211, 70, 1);
   --ditto-colors-light-dark-ditto-background-white: rgba(255, 255, 255, 1);
   --ditto-colors-light-dark-ditto-border-grey: rgba(210, 210, 227, 1);
@@ -37,12 +89,6 @@
   --ditto-colors-light-dark-ditto-subtext-grey: rgba(98, 105, 132, 1);
   --ditto-colors-light-dark-ditto-text-fill: rgba(16, 31, 60, 1);
   --ditto-colors-light-dark-ditto-text-prompt: rgba(177, 177, 195, 1);
-  --poppins-bold-11px-font-family: "Poppins", Helvetica;
-  --poppins-bold-11px-font-size: 11px;
-  --poppins-bold-11px-font-style: normal;
-  --poppins-bold-11px-font-weight: 700;
-  --poppins-bold-11px-letter-spacing: -0.33px;
-  --poppins-bold-11px-line-height: normal;
 }
 
 /*

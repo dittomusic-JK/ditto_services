@@ -12,34 +12,34 @@
         </div>
       </div>
       <span
-        class="text-[14px] sm:text-[16px] font-bold font-['Satoshi-Regular'] truncate"
-        :class="isUnavailable ? 'text-[#B1B1C3]' : 'text-[#101F3C]'"
+        class="text-sm sm:text-base font-semibold font-satoshi truncate"
+        :class="isUnavailable ? 'text-dark-grey' : 'text-ditto-blue'"
       >
         {{ title }}
       </span>
     </div>
     <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-      <span v-if="isActive" class="text-xs font-semibold text-[#00ad68] bg-[#00FF99]/20 px-3 py-1 rounded-full">
+      <span v-if="isActive" class="text-xs font-semibold text-success bg-ditto-pro/20 px-3 py-1 rounded-full">
         Active
       </span>
       <span
         v-else-if="isUnavailable"
-        class="text-xs font-semibold text-[#626984] bg-[#D2D2E3]/50 px-3 py-1 rounded-full relative group cursor-help"
+        class="text-xs font-semibold text-ditto-grey bg-faded-grey/50 px-3 py-1 rounded-full relative group cursor-help"
       >
         Unavailable
         <div
           v-if="unavailableTooltip"
-          class="absolute bottom-full right-0 mb-2 px-3 py-2 bg-[#101F3C] text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
+          class="absolute bottom-full right-0 mb-2 px-3 py-2 bg-ditto-blue text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
         >
           {{ unavailableTooltip }}
-          <div class="absolute top-full right-4 border-4 border-transparent border-t-[#101F3C]"></div>
+          <div class="absolute top-full right-4 border-4 border-transparent border-t-ditto-blue"></div>
         </div>
       </span>
-      <span v-else-if="purchased" class="text-xs font-semibold text-[#00ad68] bg-[#00FF99]/20 px-3 py-1 rounded-full">
+      <span v-else-if="purchased" class="text-xs font-semibold text-success bg-ditto-pro/20 px-3 py-1 rounded-full">
         Active
       </span>
       <template v-else>
-        <span class="text-[13px] sm:text-[14px] font-bold text-[#101F3C] font-['Satoshi-Regular']">
+        <span class="text-[13px] sm:text-sm font-bold text-ditto-blue font-satoshi">
           {{ price }}
         </span>
         <div
@@ -78,10 +78,10 @@ const isUnavailable = computed(() => props.status === 'unavailable')
 const isClickable = computed(() => !props.purchased && !isActive.value && !isUnavailable.value)
 
 const rowClasses = computed(() => {
-  if (isActive.value) return 'bg-[#00FF99]/10 border-[#00FF99]'
-  if (isUnavailable.value) return 'bg-[#F9F9FF] border-[#D2D2E3] opacity-60'
-  if (props.purchased) return 'bg-[#00FF99]/10 border-[#00FF99]'
-  if (props.selected) return 'bg-[#F9F9FF] border-[#2680EB]'
-  return 'bg-[#F9F9FF] border-[#D2D2E3] hover:border-[#2680EB] cursor-pointer'
+  if (isActive.value) return 'bg-ditto-pro/10 border-ditto-pro'
+  if (isUnavailable.value) return 'bg-lighter-grey border-faded-grey opacity-60'
+  if (props.purchased) return 'bg-ditto-pro/10 border-ditto-pro'
+  if (props.selected) return 'bg-lighter-grey border-brand-secondary'
+  return 'bg-lighter-grey border-faded-grey hover:border-brand-secondary cursor-pointer'
 })
 </script>
