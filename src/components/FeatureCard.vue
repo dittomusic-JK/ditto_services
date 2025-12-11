@@ -44,7 +44,7 @@
         <CircleCheck :checked="checked" :disabled="disabled" @click="$emit('toggle')" />
       </div>
     </div>
-    <div v-if="$slots.default" class="mt-5 overflow-visible">
+    <div v-if="$slots.default" class="mt-5 overflow-visible ml-10 sm:ml-[52px]">
       <slot />
     </div>
   </div>
