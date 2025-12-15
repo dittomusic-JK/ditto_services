@@ -164,12 +164,12 @@ const props = defineProps<{
 // Calculate total share already allocated (100 - userShare)
 const currentTotalShare = computed(() => 100 - props.userShare)
 
-// Check if there are pending changes (pending or rejected splits)
+// Check if there are pending changes (only pending splits - rejected means share is back with user)
 const hasPendingChanges = computed(() => 
-  props.existingSplits.some(s => s.status === 'pending' || s.status === 'rejected')
+  props.existingSplits.some(s => s.status === 'pending')
 )
 
-// Calculate what the user's share would be with only active splits
+// Calculate what the user's share would be with only active splits (rejected splits don't reduce user share)
 const activeUserShare = computed(() => {
   const activeTotal = props.existingSplits
     .filter(s => s.status === 'active')

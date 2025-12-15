@@ -389,7 +389,7 @@ const populatedRelease: Release = {
       ],
       userShare: 40
     },
-    // Track 10: Rejected split (collaborator declined)
+    // Track 10: Rejected split (collaborator declined - their share goes back to user)
     {
       trackId: 't10',
       trackNumber: 10,
@@ -403,7 +403,7 @@ const populatedRelease: Release = {
           status: 'rejected'
         }
       ],
-      userShare: 80
+      userShare: 100 // User gets the rejected 20% back
     }
   ]
 }
@@ -420,7 +420,15 @@ const tracksWithConfirmedSplits = computed(() =>
 
 const tracksWithPendingSplits = computed(() =>
   release.tracks.filter(t => 
-    t.splits.length > 0 && t.splits.some(s => s.status === 'pending' || s.status === 'rejected')
+    t.splits.length > 0 && t.splits.some(s => s.status === 'pending')
+  )
+)
+
+const tracksWithRejectedSplits = computed(() =>
+  release.tracks.filter(t => 
+    t.splits.length > 0 && 
+    t.splits.some(s => s.status === 'rejected') && 
+    !t.splits.some(s => s.status === 'pending') // Only rejected, no pending
   )
 )
 
@@ -476,7 +484,8 @@ const handleAddSplit = (trackId: string, split: { name: string; email: string; s
       share: split.share,
       status: 'pending'
     })
-    track.userShare = Math.max(0, 100 - track.splits.reduce((sum, s) => sum + s.share, 0))
+    // Recalculate user share (rejected splits don't reduce user share)
+    track.userShare = Math.max(0, 100 - track.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
     pendingChanges[trackId] = true
   }
 }
@@ -488,7 +497,8 @@ const handleRemoveSplit = (trackId: string, splitId: string) => {
     if (splitIndex > -1) {
       const removedName = track.splits[splitIndex].name
       track.splits.splice(splitIndex, 1)
-      track.userShare = Math.max(0, 100 - track.splits.reduce((sum, s) => sum + s.share, 0))
+      // Recalculate user share (rejected splits don't reduce user share)
+      track.userShare = Math.max(0, 100 - track.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
       pendingChanges[trackId] = true
       showToast(`${removedName} removed from split`)
     }
@@ -505,7 +515,8 @@ const handleUpdateShare = (trackId: string, splitId: string, newShare: number) =
     if (split.status === 'active' || split.status === 'rejected') {
       split.status = 'pending'
     }
-    track.userShare = Math.max(0, 100 - track.splits.reduce((sum, s) => sum + s.share, 0))
+    // Recalculate user share (rejected splits don't reduce user share)
+    track.userShare = Math.max(0, 100 - track.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
     pendingChanges[trackId] = true
     showToast(`${split.name}'s share updated from ${oldShare}% to ${newShare}%`)
   }

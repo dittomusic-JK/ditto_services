@@ -209,16 +209,23 @@ const getOtherTracksWithSplits = (currentTrackId: string): TrackSplit[] => {
   return props.release.tracks.filter(t => t.trackId !== currentTrackId && t.splits.length > 0)
 }
 
-const rowStatus = (track: TrackSplit): 'none' | 'confirmed' | 'pending' => {
+const rowStatus = (track: TrackSplit): 'none' | 'confirmed' | 'pending' | 'rejected' => {
   if (track.splits.length === 0) return 'none'
-  if (track.splits.every(s => s.status === 'active')) return 'confirmed'
-  return 'pending'
+  const hasActive = track.splits.some(s => s.status === 'active')
+  const hasPending = track.splits.some(s => s.status === 'pending')
+  const hasRejected = track.splits.some(s => s.status === 'rejected')
+  
+  if (hasPending) return 'pending' // Any pending = pending state
+  if (hasRejected && !hasActive) return 'rejected' // Only rejected, no active = rejected state
+  if (hasActive) return 'confirmed' // All remaining active = confirmed
+  return 'none'
 }
 
 const rowBgClass = (track: TrackSplit): string => {
   const status = rowStatus(track)
   if (status === 'confirmed') return 'bg-success/5'
   if (status === 'pending') return 'bg-amber-500/5'
+  if (status === 'rejected') return 'bg-error/5'
   return 'bg-white'
 }
 
@@ -226,6 +233,7 @@ const rowHoverClass = (track: TrackSplit): string => {
   const status = rowStatus(track)
   if (status === 'confirmed') return 'hover:bg-success/10'
   if (status === 'pending') return 'hover:bg-amber-500/10'
+  if (status === 'rejected') return 'hover:bg-error/10'
   return 'hover:bg-lighter-grey'
 }
 
@@ -236,6 +244,10 @@ const getConfirmedShare = (track: TrackSplit): number => {
 }
 
 const getPendingCount = (track: TrackSplit): number => {
-  return track.splits.filter(s => s.status === 'pending' || s.status === 'rejected').length
+  return track.splits.filter(s => s.status === 'pending').length
+}
+
+const getRejectedCount = (track: TrackSplit): number => {
+  return track.splits.filter(s => s.status === 'rejected').length
 }
 </script>
