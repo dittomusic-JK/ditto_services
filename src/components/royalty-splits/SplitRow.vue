@@ -243,7 +243,7 @@
           :class="statusDotClass"
         />
         <span class="text-xs text-ditto-grey font-satoshi">
-          {{ statusText }}
+          {{ mobileStatusText }}
         </span>
       </div>
       <div v-else />
@@ -450,7 +450,7 @@ const formatShortDate = (dateStr: string): string => {
 const statusText = computed(() => {
   switch (props.status) {
     case 'active':
-      return props.activeSince ? `Active since ${formatShortDate(props.activeSince)}` : 'Active'
+      return 'Active'
     case 'pending':
       return 'Pending'
     case 'rejected':
@@ -460,8 +460,18 @@ const statusText = computed(() => {
   }
 })
 
+// Mobile shows full date inline since there's more room
+const mobileStatusText = computed(() => {
+  if (props.status === 'active' && props.activeSince) {
+    return `Active since ${props.activeSince}`
+  }
+  return statusText.value
+})
+
 const statusTooltip = computed(() => {
   switch (props.status) {
+    case 'active':
+      return props.activeSince ? `Active since ${props.activeSince}` : ''
     case 'pending':
       return "The collaborator hasn't accepted their share via email yet."
     case 'rejected':
