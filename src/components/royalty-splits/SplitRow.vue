@@ -44,7 +44,7 @@
     <div>
       <label class="block text-xs text-ditto-grey mb-1 font-satoshi">Email*</label>
       <input
-        v-if="isEditable || (status === 'unclaimed' && canEditEmail)"
+        v-if="isEditable"
         v-model="localEmail"
         type="email"
         placeholder="We'll contact them here"
@@ -63,7 +63,8 @@
         </label>
         <div class="flex items-center gap-1">
           <input
-            v-if="isEditable"
+            v-if="isEditable || isEditingShare"
+            ref="shareInputRef"
             v-model.number="localShare"
             type="number"
             min="0"
@@ -71,44 +72,68 @@
             placeholder="0%"
             class="w-12 text-sm font-satoshi text-right border-b pb-1 focus:outline-none bg-transparent"
             :class="shareExceeds100 ? 'text-error border-error' : 'text-ditto-blue border-faded-grey focus:border-brand-secondary'"
-            @input="emitUpdate"
+            @input="isEditable ? emitUpdate() : null"
+            @keydown.enter="isEditable ? handleShareComplete() : saveShareEdit()"
+            @keydown.tab="isEditable ? handleShareComplete() : null"
+            @keydown.escape="cancelShareEdit"
           />
-          <span v-else class="text-sm text-ditto-blue font-satoshi">{{ share }}</span>
-          <span class="text-sm font-satoshi" :class="shareExceeds100 ? 'text-error' : 'text-ditto-grey'">%</span>
+          <span v-else class="text-sm font-satoshi" :class="status === 'rejected' ? 'text-error line-through' : 'text-ditto-blue'">{{ share }}</span>
+          <span class="text-sm font-satoshi" :class="shareExceeds100 || status === 'rejected' ? 'text-error' : 'text-ditto-grey'" :style="status === 'rejected' ? 'text-decoration: line-through' : ''">%</span>
         </div>
-        <p v-if="isEditable && shareExceeds100" class="text-[10px] text-error font-satoshi mt-1 whitespace-nowrap">
+        <p v-if="(isEditable || isEditingShare) && shareExceeds100" class="text-[10px] text-error font-satoshi mt-1 whitespace-nowrap">
           Exceeds 100%
         </p>
+        <!-- Save/Cancel buttons when editing share -->
+        <div v-if="isEditingShare" class="flex items-center gap-1 mt-1.5 justify-end">
+          <button
+            @click="saveShareEdit"
+            :disabled="shareExceeds100 || localShare === share"
+            class="px-2 py-0.5 text-[10px] font-medium rounded bg-brand-secondary text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Save
+          </button>
+          <button
+            @click="cancelShareEdit"
+            class="px-2 py-0.5 text-[10px] font-medium rounded border border-faded-grey text-ditto-grey hover:border-ditto-grey"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
 
-      <!-- Status indicator -->
-      <div v-if="status && !isEditable" class="flex flex-col items-center min-w-[80px]">
+      <!-- Status indicator with tooltip -->
+      <div v-if="status && !isEditable && !isEditingShare" class="flex flex-col items-center min-w-[80px] relative group">
         <div
           class="w-2.5 h-2.5 rounded-full mb-1"
           :class="statusDotClass"
         />
-        <span class="text-xs text-ditto-grey font-satoshi text-center leading-tight">
+        <span class="text-xs font-satoshi text-center leading-tight cursor-help" :class="status === 'rejected' ? 'text-error' : 'text-ditto-grey'">
           {{ statusText }}
         </span>
+        <!-- Tooltip -->
+        <div v-if="statusTooltip" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-ditto-blue text-white text-[10px] rounded-lg w-48 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+          {{ statusTooltip }}
+          <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ditto-blue" />
+        </div>
       </div>
 
       <!-- Action buttons -->
       <div class="flex items-center gap-1">
-        <!-- Edit share icon (for active splits) -->
-        <div v-if="!isEditable && status === 'active'" class="relative group">
+        <!-- Edit share icon (for active or rejected splits) -->
+        <div v-if="!isEditable && !isEditingShare && (status === 'active' || status === 'rejected')" class="relative group">
           <button
-            @click="$emit('edit-share')"
+            @click="startShareEdit"
             class="p-1.5 text-ditto-grey hover:text-brand-secondary transition-colors"
           >
             <EditIcon />
           </button>
           <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-ditto-blue text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-            Edit share
+            {{ status === 'rejected' ? 'Edit & resend offer' : 'Edit share' }}
           </div>
         </div>
 
-        <!-- Resend confirmation (for unconfirmed splits) -->
-        <div v-if="!isEditable && status === 'unconfirmed'" class="relative group">
+        <!-- Resend confirmation (for pending splits) -->
+        <div v-if="!isEditable && status === 'pending'" class="relative group">
           <button
             @click="$emit('resend')"
             class="p-1.5 text-ditto-grey hover:text-brand-secondary transition-colors"
@@ -183,6 +208,8 @@
             class="w-10 text-sm font-satoshi text-right border-b pb-1 focus:outline-none bg-transparent"
             :class="shareExceeds100 ? 'text-error border-error' : 'text-ditto-blue border-faded-grey focus:border-brand-secondary'"
             @input="emitUpdate"
+            @keydown.enter="handleShareComplete"
+            @keydown.tab="handleShareComplete"
           />
           <span v-else class="text-sm text-ditto-blue font-satoshi">{{ share }}</span>
           <span class="text-sm font-satoshi" :class="shareExceeds100 ? 'text-error' : 'text-ditto-grey'">%</span>
@@ -197,7 +224,7 @@
     <div>
       <label class="block text-xs text-ditto-grey mb-1 font-satoshi">Email*</label>
       <input
-        v-if="isEditable || (status === 'unclaimed' && canEditEmail)"
+        v-if="isEditable"
         v-model="localEmail"
         type="email"
         placeholder="Email address"
@@ -224,14 +251,14 @@
       <!-- Action buttons -->
       <div class="flex items-center gap-1">
         <button
-          v-if="status === 'active'"
+          v-if="status === 'active' || status === 'rejected'"
           @click="$emit('edit-share')"
           class="p-1.5 text-ditto-grey hover:text-brand-secondary transition-colors"
         >
           <EditIcon />
         </button>
         <button
-          v-if="status === 'unconfirmed'"
+          v-if="status === 'pending'"
           @click="$emit('resend')"
           class="p-1.5 text-ditto-grey hover:text-brand-secondary transition-colors"
         >
@@ -259,7 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import type { SplitStatus } from '../../types'
 import { EditIcon, TrashIcon, SendIcon } from './icons'
 
@@ -290,15 +317,19 @@ const emit = defineEmits<{
   update: [{ name: string; email: string; share: number }]
   remove: []
   'edit-share': []
+  'update-share': [newShare: number]
+  complete: []
   resend: []
 }>()
 
 const nameInputRef = ref<HTMLInputElement | null>(null)
+const shareInputRef = ref<HTMLInputElement | null>(null)
 const localName = ref(props.name)
 const localEmail = ref(props.email)
 const localShare = ref(props.share)
 const showAutocomplete = ref(false)
 const highlightedIndex = ref(-1)
+const isEditingShare = ref(false)
 
 watch(() => props.name, (val) => { localName.value = val })
 watch(() => props.email, (val) => { localEmail.value = val })
@@ -348,6 +379,42 @@ const hideAutocompleteDelayed = () => {
   setTimeout(() => { showAutocomplete.value = false }, 150)
 }
 
+// Share editing
+const startShareEdit = () => {
+  localShare.value = props.share
+  isEditingShare.value = true
+  nextTick(() => {
+    shareInputRef.value?.focus()
+    shareInputRef.value?.select()
+  })
+}
+
+const saveShareEdit = () => {
+  if (!shareExceeds100.value && localShare.value !== props.share) {
+    emit('update-share', localShare.value)
+  }
+  isEditingShare.value = false
+}
+
+const cancelShareEdit = () => {
+  localShare.value = props.share
+  isEditingShare.value = false
+}
+
+// Check if row is complete (valid for adding)
+const isRowComplete = computed(() => {
+  return localName.value.trim() !== '' && 
+         localEmail.value.trim() !== '' && 
+         localShare.value > 0 &&
+         !shareExceeds100.value
+})
+
+const handleShareComplete = () => {
+  if (props.isEditable && isRowComplete.value) {
+    emit('complete')
+  }
+}
+
 const shareLabel = computed(() => {
   if (props.shareIndex !== undefined) {
     return `Share #${props.shareIndex}`
@@ -358,8 +425,8 @@ const shareLabel = computed(() => {
 const statusDotClass = computed(() => {
   switch (props.status) {
     case 'active': return 'bg-success'
-    case 'unconfirmed': return 'bg-amber-500'
-    case 'unclaimed': return 'bg-amber-400'
+    case 'pending': return 'bg-amber-500'
+    case 'rejected': return 'bg-error'
     default: return 'bg-ditto-grey'
   }
 })
@@ -384,10 +451,21 @@ const statusText = computed(() => {
   switch (props.status) {
     case 'active':
       return props.activeSince ? `Active since ${formatShortDate(props.activeSince)}` : 'Active'
-    case 'unconfirmed':
-      return 'Pending confirmation'
-    case 'unclaimed':
-      return 'Unclaimed'
+    case 'pending':
+      return 'Pending'
+    case 'rejected':
+      return 'Rejected'
+    default:
+      return ''
+  }
+})
+
+const statusTooltip = computed(() => {
+  switch (props.status) {
+    case 'pending':
+      return "The collaborator hasn't accepted their share via email yet."
+    case 'rejected':
+      return 'The collaborator declined this split offer. Edit to send a new offer.'
     default:
       return ''
   }

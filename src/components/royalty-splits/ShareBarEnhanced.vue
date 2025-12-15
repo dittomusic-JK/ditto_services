@@ -16,10 +16,11 @@
       
       <!-- Tooltip on hover -->
       <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-ditto-blue text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+        <p class="text-[10px] text-white/70 mb-1.5">Current active split</p>
         <div class="flex flex-col gap-1">
           <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-white" />
-            <span>Your share: {{ actualUserShare }}%</span>
+            <div class="w-2 h-2 rounded-full bg-brand-secondary" />
+            <span>You: {{ actualUserShare }}%</span>
           </div>
           <div v-if="confirmedShare > 0" class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-success" />

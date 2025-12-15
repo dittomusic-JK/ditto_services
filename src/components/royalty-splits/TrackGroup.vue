@@ -172,7 +172,7 @@
           @save="$emit('save', track.trackId)"
           @add-split="(split) => $emit('add-split', track.trackId, split)"
           @remove-split="(id) => $emit('remove-split', track.trackId, id)"
-          @edit-split="(id) => $emit('edit-split', track.trackId, id)"
+          @update-share="(id, newShare) => $emit('update-share', track.trackId, id, newShare)"
           @resend-confirmation="(id) => $emit('resend-confirmation', track.trackId, id)"
           @copy-from="(sourceId) => $emit('copy-from', track.trackId, sourceId)"
         />
@@ -199,7 +199,7 @@ defineEmits<{
   save: [trackId: string]
   'add-split': [trackId: string, split: { name: string; email: string; share: number }]
   'remove-split': [trackId: string, splitId: string]
-  'edit-split': [trackId: string, splitId: string]
+  'update-share': [trackId: string, splitId: string, newShare: number]
   'resend-confirmation': [trackId: string, splitId: string]
   'copy-from': [trackId: string, sourceTrackId: string]
   'copy-to': [trackId: string]
@@ -236,6 +236,6 @@ const getConfirmedShare = (track: TrackSplit): number => {
 }
 
 const getPendingCount = (track: TrackSplit): number => {
-  return track.splits.filter(s => s.status === 'unconfirmed' || s.status === 'unclaimed').length
+  return track.splits.filter(s => s.status === 'pending' || s.status === 'rejected').length
 }
 </script>

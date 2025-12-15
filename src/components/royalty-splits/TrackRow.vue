@@ -123,7 +123,7 @@ defineEmits<{
 
 const splitCount = computed(() => props.splits.length)
 
-// Colors: purple for yours, orange for confirmed, red for unconfirmed
+// Colors: purple for yours, orange for confirmed, amber for pending, red for rejected
 const shareSegments = computed(() => {
   const segments = []
   
@@ -139,10 +139,16 @@ const shareSegments = computed(() => {
     segments.push({ percentage: confirmedShare, color: '#FFB100' })
   }
   
-  const unconfirmedSplits = props.splits.filter(s => s.status === 'unconfirmed')
-  const unconfirmedShare = unconfirmedSplits.reduce((sum, s) => sum + s.share, 0)
-  if (unconfirmedShare > 0) {
-    segments.push({ percentage: unconfirmedShare, color: '#EE404C' })
+  const pendingSplits = props.splits.filter(s => s.status === 'pending')
+  const pendingShare = pendingSplits.reduce((sum, s) => sum + s.share, 0)
+  if (pendingShare > 0) {
+    segments.push({ percentage: pendingShare, color: '#F59E0B' }) // amber
+  }
+  
+  const rejectedSplits = props.splits.filter(s => s.status === 'rejected')
+  const rejectedShare = rejectedSplits.reduce((sum, s) => sum + s.share, 0)
+  if (rejectedShare > 0) {
+    segments.push({ percentage: rejectedShare, color: '#EE404C' }) // red
   }
   
   return segments

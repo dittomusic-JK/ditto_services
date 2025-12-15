@@ -471,10 +471,11 @@ const handleConfirmUpgradeLabel = (labelName: string) => {
   labelModalOpen.value = false
 }
 
-// Calculate checkout total
+// Calculate checkout total (includes both paid and free selections)
 const selectedItems = computed(() => {
   const items: { name: string; price: number }[] = []
   
+  // Paid items
   if (chartsUKSelected.value) items.push({ name: 'Charts UK/Ireland', price: 15 })
   if (chartsUSSelected.value) items.push({ name: 'Charts US/Canada', price: 15 })
   if (chartsAUSelected.value) items.push({ name: 'Charts Australia', price: 15 })
@@ -484,6 +485,13 @@ const selectedItems = computed(() => {
   if (!includesReleaseProtection.value && releaseProtectionSelected.value) items.push({ name: 'Release Protection', price: 10 })
   if (!includesYouTube.value && youTubeSelected.value) items.push({ name: 'YouTube Content ID', price: 10 })
   if (!includesBeatport.value && beatportSelected.value) items.push({ name: 'Beatport', price: 65 })
+  
+  // Free items (included with plan but user opted in)
+  if (includesAutoRelease.value && autoReleaseEnabled.value) items.push({ name: 'Auto-release', price: 0 })
+  if (includesReleaseProtection.value && releaseProtectionEnabled.value) items.push({ name: 'Release Protection', price: 0 })
+  if (includesYouTube.value && youTubeEnabled.value) items.push({ name: 'YouTube Content ID', price: 0 })
+  if (includesFingerprint.value && fingerprintEnabled.value) items.push({ name: 'Audio Fingerprint', price: 0 })
+  if (includesBeatport.value && beatportEnabled.value) items.push({ name: 'Beatport', price: 0 })
   
   return items
 })

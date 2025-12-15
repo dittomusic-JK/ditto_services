@@ -9,7 +9,7 @@ export interface LabelOption {
 
 // Royalty Splits Types
 export type UserType = 'subscription' | 'rls'
-export type SplitStatus = 'active' | 'unconfirmed' | 'unclaimed'
+export type SplitStatus = 'active' | 'pending' | 'rejected'
 
 export interface Collaborator {
   id: string

@@ -13,9 +13,9 @@
         :style="{ width: `${segment.percentage}%`, backgroundColor: segment.color }"
       />
     </div>
-    <!-- Unconfirmed percentage on right if present -->
-    <span v-if="unconfirmedShare > 0" class="text-sm font-semibold text-error font-satoshi whitespace-nowrap">
-      {{ unconfirmedShare }}%
+    <!-- Pending percentage on right if present -->
+    <span v-if="pendingShare > 0" class="text-sm font-semibold text-amber-500 font-satoshi whitespace-nowrap">
+      {{ pendingShare }}%
     </span>
   </div>
 </template>
@@ -30,8 +30,8 @@ interface Segment {
 withDefaults(defineProps<{
   segments: Segment[]
   userShare: number
-  unconfirmedShare?: number
+  pendingShare?: number
 }>(), {
-  unconfirmedShare: 0
+  pendingShare: 0
 })
 </script>

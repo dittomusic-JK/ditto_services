@@ -75,7 +75,7 @@
       @save="handleSave"
       @add-split="handleAddSplit"
       @remove-split="handleRemoveSplit"
-      @edit-split="handleEditSplit"
+      @update-share="handleUpdateShare"
       @resend-confirmation="handleResendConfirmation"
       @copy-from="handleCopyFrom"
       @copy-to="openCopyToModal"
@@ -268,7 +268,7 @@ const populatedRelease: Release = {
       ],
       userShare: 65
     },
-    // Track 4: Single pending/unconfirmed split
+    // Track 4: Single pending split
     {
       trackId: 't4',
       trackNumber: 4,
@@ -279,7 +279,7 @@ const populatedRelease: Release = {
           name: 'Ayra Starr',
           email: 'ayra@mavin.com',
           share: 30,
-          status: 'unconfirmed'
+          status: 'pending'
         }
       ],
       userShare: 70
@@ -303,7 +303,7 @@ const populatedRelease: Release = {
           name: 'New Collaborator',
           email: 'newcollab@email.com',
           share: 15,
-          status: 'unconfirmed'
+          status: 'pending'
         }
       ],
       userShare: 65
@@ -319,14 +319,14 @@ const populatedRelease: Release = {
           name: 'Bob Johnson',
           email: 'bob@example.com',
           share: 25,
-          status: 'unconfirmed'
+          status: 'pending'
         },
         {
           id: 's8',
           name: 'Sarah Chen',
           email: 'sarah.chen@music.co',
           share: 25,
-          status: 'unconfirmed'
+          status: 'pending'
         }
       ],
       userShare: 50
@@ -389,7 +389,7 @@ const populatedRelease: Release = {
       ],
       userShare: 40
     },
-    // Track 10: Unclaimed split (collaborator hasn't registered)
+    // Track 10: Rejected split (collaborator declined)
     {
       trackId: 't10',
       trackNumber: 10,
@@ -397,10 +397,10 @@ const populatedRelease: Release = {
       splits: [
         {
           id: 's13',
-          name: 'Unknown Artist',
-          email: 'mystery@email.com',
+          name: 'Former Collaborator',
+          email: 'declined@email.com',
           share: 20,
-          status: 'unclaimed'
+          status: 'rejected'
         }
       ],
       userShare: 80
@@ -420,7 +420,7 @@ const tracksWithConfirmedSplits = computed(() =>
 
 const tracksWithPendingSplits = computed(() =>
   release.tracks.filter(t => 
-    t.splits.length > 0 && t.splits.some(s => s.status === 'unconfirmed' || s.status === 'unclaimed')
+    t.splits.length > 0 && t.splits.some(s => s.status === 'pending' || s.status === 'rejected')
   )
 )
 
@@ -474,7 +474,7 @@ const handleAddSplit = (trackId: string, split: { name: string; email: string; s
       name: split.name,
       email: split.email,
       share: split.share,
-      status: 'unconfirmed'
+      status: 'pending'
     })
     track.userShare = Math.max(0, 100 - track.splits.reduce((sum, s) => sum + s.share, 0))
     pendingChanges[trackId] = true
@@ -495,9 +495,20 @@ const handleRemoveSplit = (trackId: string, splitId: string) => {
   }
 }
 
-const handleEditSplit = (trackId: string, splitId: string) => {
-  console.log('Edit split:', trackId, splitId)
-  pendingChanges[trackId] = true
+const handleUpdateShare = (trackId: string, splitId: string, newShare: number) => {
+  const track = release.tracks.find(t => t.trackId === trackId)
+  const split = track?.splits.find(s => s.id === splitId)
+  if (track && split) {
+    const oldShare = split.share
+    split.share = newShare
+    // When editing an active or rejected split, it becomes pending again (needs re-confirmation)
+    if (split.status === 'active' || split.status === 'rejected') {
+      split.status = 'pending'
+    }
+    track.userShare = Math.max(0, 100 - track.splits.reduce((sum, s) => sum + s.share, 0))
+    pendingChanges[trackId] = true
+    showToast(`${split.name}'s share updated from ${oldShare}% to ${newShare}%`)
+  }
 }
 
 const handleResendConfirmation = (trackId: string, splitId: string) => {
@@ -586,7 +597,7 @@ const applyCopyToTracks = (sourceTrack: TrackSplit, targetTracks: TrackSplit[], 
           name: s.name,
           email: s.email,
           share: s.share,
-          status: 'unconfirmed' as const
+          status: 'pending' as const
         }))
         track.splits = copiedSplits
       } else {
@@ -599,7 +610,7 @@ const applyCopyToTracks = (sourceTrack: TrackSplit, targetTracks: TrackSplit[], 
             name: s.name,
             email: s.email,
             share: s.share,
-            status: 'unconfirmed' as const
+            status: 'pending' as const
           }))
         track.splits = [...track.splits, ...newSplits]
       }
