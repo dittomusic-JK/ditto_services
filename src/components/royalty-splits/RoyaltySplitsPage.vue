@@ -94,7 +94,9 @@
     <!-- First Split Onboarding Modal -->
     <FirstSplitModal
       v-if="showFirstSplitModal"
+      :other-tracks-count="tracksWithoutSplits.length"
       @close="showFirstSplitModal = false"
+      @copy-to-all="handleCopyFromFirstSplit"
     />
   </div>
 </template>
@@ -123,6 +125,7 @@ const expandedTrackId = ref<string | null>(null)
 const pendingChanges = reactive<Record<string, boolean>>({})
 const showFirstSplitModal = ref(false)
 const hasShownFirstSplitModal = ref(false)
+const lastSavedTrackId = ref<string | null>(null)
 
 // Copy modal state
 const copyModal = reactive<{
@@ -405,6 +408,7 @@ const handleSave = (trackId: string) => {
   const isFirstSplit = totalSplitsBeforeSave === 1 && !hasShownFirstSplitModal.value
   
   pendingChanges[trackId] = false
+  lastSavedTrackId.value = trackId
   console.log('Saving splits for track:', trackId)
   
   // Show first split modal if this is the first one
@@ -494,6 +498,14 @@ const openCopyToAllModal = () => {
     copyModal.sourceSplits = sourceTrack.splits
     copyModal.targetTracks = tracksWithoutSplits.value
     copyModal.show = true
+  }
+}
+
+// Handle copy from first split modal
+const handleCopyFromFirstSplit = () => {
+  showFirstSplitModal.value = false
+  if (lastSavedTrackId.value) {
+    openCopyToModal(lastSavedTrackId.value)
   }
 }
 

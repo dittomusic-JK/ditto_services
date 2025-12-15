@@ -66,13 +66,27 @@
         >
           Got it
         </button>
+
+        <!-- Copy to other tracks link -->
+        <button
+          v-if="otherTracksCount > 0"
+          @click="$emit('copy-to-all')"
+          class="w-full mt-3 text-sm font-medium text-brand-secondary font-satoshi hover:underline transition-colors"
+        >
+          or Copy this split to {{ otherTracksCount === 1 ? '1 other track' : `all ${otherTracksCount} other tracks` }} →
+        </button>
       </div>
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
+defineProps<{
+  otherTracksCount?: number
+}>()
+
 defineEmits<{
   close: []
+  'copy-to-all': []
 }>()
 </script>
