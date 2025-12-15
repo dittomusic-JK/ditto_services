@@ -167,6 +167,7 @@
           :existing-splits="track.splits"
           :other-tracks="getOtherTracksWithSplits(track.trackId)"
           :has-changes="pendingChanges[track.trackId]"
+          :known-collaborators="knownCollaborators"
           @close="$emit('toggle', track.trackId)"
           @save="$emit('save', track.trackId)"
           @add-split="(split) => $emit('add-split', track.trackId, split)"
@@ -190,6 +191,7 @@ const props = defineProps<{
   expandedTrackId: string | null
   release: Release
   pendingChanges: Record<string, boolean>
+  knownCollaborators?: { name: string; email: string }[]
 }>()
 
 defineEmits<{
@@ -216,14 +218,14 @@ const rowStatus = (track: TrackSplit): 'none' | 'confirmed' | 'pending' => {
 const rowBgClass = (track: TrackSplit): string => {
   const status = rowStatus(track)
   if (status === 'confirmed') return 'bg-success/5'
-  if (status === 'pending') return 'bg-error/5'
+  if (status === 'pending') return 'bg-amber-500/5'
   return 'bg-white'
 }
 
 const rowHoverClass = (track: TrackSplit): string => {
   const status = rowStatus(track)
   if (status === 'confirmed') return 'hover:bg-success/10'
-  if (status === 'pending') return 'hover:bg-error/10'
+  if (status === 'pending') return 'hover:bg-amber-500/10'
   return 'hover:bg-lighter-grey'
 }
 

@@ -1,18 +1,43 @@
 <template>
   <!-- Desktop layout -->
   <div class="hidden sm:grid grid-cols-[1fr_1fr_auto] gap-4 items-start py-3">
-    <!-- Name field -->
-    <div>
+    <!-- Name field with autocomplete -->
+    <div class="relative">
       <label class="block text-xs text-ditto-grey mb-1 font-satoshi">Name:</label>
       <input
         v-if="isEditable"
+        ref="nameInputRef"
         v-model="localName"
         type="text"
         placeholder="Enter name"
         class="w-full text-sm text-ditto-blue font-satoshi border-b border-faded-grey pb-1 focus:border-brand-secondary focus:outline-none bg-transparent"
-        @input="emitUpdate"
+        @input="handleNameInput"
+        @focus="showAutocomplete = filteredCollaborators.length > 0"
+        @blur="hideAutocompleteDelayed"
+        @keydown.down.prevent="navigateAutocomplete(1)"
+        @keydown.up.prevent="navigateAutocomplete(-1)"
+        @keydown.enter.prevent="selectHighlighted"
+        @keydown.escape="showAutocomplete = false"
       />
       <span v-else class="text-sm text-ditto-blue font-satoshi">{{ name }}</span>
+      
+      <!-- Autocomplete dropdown -->
+      <div
+        v-if="isEditable && showAutocomplete && filteredCollaborators.length > 0"
+        class="absolute top-full left-0 right-0 mt-1 bg-white border border-faded-grey rounded-lg shadow-lg py-1 z-20 max-h-40 overflow-y-auto"
+      >
+        <button
+          v-for="(collab, index) in filteredCollaborators"
+          :key="collab.email"
+          type="button"
+          class="w-full px-3 py-2 text-left text-sm font-satoshi transition-colors"
+          :class="index === highlightedIndex ? 'bg-brand-secondary/10 text-brand-secondary' : 'text-ditto-blue hover:bg-light-grey'"
+          @mousedown.prevent="selectCollaborator(collab)"
+        >
+          <span class="font-medium">{{ collab.name }}</span>
+          <span class="text-xs text-ditto-grey ml-2">{{ collab.email }}</span>
+        </button>
+      </div>
     </div>
 
     <!-- Email field -->
@@ -44,12 +69,16 @@
             min="0"
             max="100"
             placeholder="0%"
-            class="w-12 text-sm text-ditto-blue font-satoshi text-right border-b border-faded-grey pb-1 focus:border-brand-secondary focus:outline-none bg-transparent"
+            class="w-12 text-sm font-satoshi text-right border-b pb-1 focus:outline-none bg-transparent"
+            :class="shareExceeds100 ? 'text-error border-error' : 'text-ditto-blue border-faded-grey focus:border-brand-secondary'"
             @input="emitUpdate"
           />
           <span v-else class="text-sm text-ditto-blue font-satoshi">{{ share }}</span>
-          <span class="text-sm text-ditto-grey font-satoshi">%</span>
+          <span class="text-sm font-satoshi" :class="shareExceeds100 ? 'text-error' : 'text-ditto-grey'">%</span>
         </div>
+        <p v-if="isEditable && shareExceeds100" class="text-[10px] text-error font-satoshi mt-1 whitespace-nowrap">
+          Exceeds 100%
+        </p>
       </div>
 
       <!-- Status indicator -->
@@ -109,9 +138,9 @@
 
   <!-- Mobile layout -->
   <div class="sm:hidden flex flex-col gap-3 py-3">
-    <!-- Row 1: Name and Email stacked -->
+    <!-- Row 1: Name and Share -->
     <div class="flex gap-3">
-      <div class="flex-1">
+      <div class="flex-1 relative">
         <label class="block text-xs text-ditto-grey mb-1 font-satoshi">Name:</label>
         <input
           v-if="isEditable"
@@ -119,9 +148,27 @@
           type="text"
           placeholder="Name"
           class="w-full text-sm text-ditto-blue font-satoshi border-b border-faded-grey pb-1 focus:border-brand-secondary focus:outline-none bg-transparent"
-          @input="emitUpdate"
+          @input="handleNameInput"
+          @focus="showAutocomplete = filteredCollaborators.length > 0"
+          @blur="hideAutocompleteDelayed"
         />
         <span v-else class="text-sm text-ditto-blue font-satoshi">{{ name }}</span>
+        
+        <!-- Mobile autocomplete dropdown -->
+        <div
+          v-if="isEditable && showAutocomplete && filteredCollaborators.length > 0"
+          class="absolute top-full left-0 right-0 mt-1 bg-white border border-faded-grey rounded-lg shadow-lg py-1 z-20 max-h-32 overflow-y-auto"
+        >
+          <button
+            v-for="collab in filteredCollaborators"
+            :key="collab.email"
+            type="button"
+            class="w-full px-3 py-2 text-left text-sm font-satoshi text-ditto-blue hover:bg-light-grey transition-colors"
+            @mousedown.prevent="selectCollaborator(collab)"
+          >
+            <span class="font-medium">{{ collab.name }}</span>
+          </button>
+        </div>
       </div>
       <div class="w-16 shrink-0">
         <label class="block text-xs text-ditto-grey mb-1 font-satoshi">{{ shareLabel }}</label>
@@ -133,12 +180,16 @@
             min="0"
             max="100"
             placeholder="0"
-            class="w-10 text-sm text-ditto-blue font-satoshi text-right border-b border-faded-grey pb-1 focus:border-brand-secondary focus:outline-none bg-transparent"
+            class="w-10 text-sm font-satoshi text-right border-b pb-1 focus:outline-none bg-transparent"
+            :class="shareExceeds100 ? 'text-error border-error' : 'text-ditto-blue border-faded-grey focus:border-brand-secondary'"
             @input="emitUpdate"
           />
           <span v-else class="text-sm text-ditto-blue font-satoshi">{{ share }}</span>
-          <span class="text-sm text-ditto-grey font-satoshi">%</span>
+          <span class="text-sm font-satoshi" :class="shareExceeds100 ? 'text-error' : 'text-ditto-grey'">%</span>
         </div>
+        <p v-if="isEditable && shareExceeds100" class="text-[10px] text-error font-satoshi mt-1">
+          Exceeds 100%
+        </p>
       </div>
     </div>
 
@@ -212,6 +263,11 @@ import { ref, computed, watch } from 'vue'
 import type { SplitStatus } from '../../types'
 import { EditIcon, TrashIcon, SendIcon } from './icons'
 
+export interface KnownCollaborator {
+  name: string
+  email: string
+}
+
 const props = withDefaults(defineProps<{
   name: string
   email: string
@@ -221,9 +277,13 @@ const props = withDefaults(defineProps<{
   shareIndex?: number
   isEditable?: boolean
   canEditEmail?: boolean
+  knownCollaborators?: KnownCollaborator[]
+  currentTotalShare?: number // Total share already allocated (excluding this row)
 }>(), {
   isEditable: false,
-  canEditEmail: false
+  canEditEmail: false,
+  knownCollaborators: () => [],
+  currentTotalShare: 0
 })
 
 const emit = defineEmits<{
@@ -233,13 +293,60 @@ const emit = defineEmits<{
   resend: []
 }>()
 
+const nameInputRef = ref<HTMLInputElement | null>(null)
 const localName = ref(props.name)
 const localEmail = ref(props.email)
 const localShare = ref(props.share)
+const showAutocomplete = ref(false)
+const highlightedIndex = ref(-1)
 
 watch(() => props.name, (val) => { localName.value = val })
 watch(() => props.email, (val) => { localEmail.value = val })
 watch(() => props.share, (val) => { localShare.value = val })
+
+// Inline validation: check if share exceeds 100%
+const shareExceeds100 = computed(() => {
+  return props.currentTotalShare + (localShare.value || 0) > 100
+})
+
+// Filter collaborators based on input
+const filteredCollaborators = computed(() => {
+  if (!localName.value.trim()) return props.knownCollaborators.slice(0, 5)
+  const search = localName.value.toLowerCase()
+  return props.knownCollaborators
+    .filter(c => c.name.toLowerCase().includes(search) || c.email.toLowerCase().includes(search))
+    .slice(0, 5)
+})
+
+const handleNameInput = () => {
+  showAutocomplete.value = filteredCollaborators.value.length > 0
+  highlightedIndex.value = -1
+  emitUpdate()
+}
+
+const selectCollaborator = (collab: KnownCollaborator) => {
+  localName.value = collab.name
+  localEmail.value = collab.email
+  showAutocomplete.value = false
+  highlightedIndex.value = -1
+  emitUpdate()
+}
+
+const navigateAutocomplete = (direction: number) => {
+  if (!showAutocomplete.value) return
+  const max = filteredCollaborators.value.length - 1
+  highlightedIndex.value = Math.max(-1, Math.min(max, highlightedIndex.value + direction))
+}
+
+const selectHighlighted = () => {
+  if (highlightedIndex.value >= 0 && highlightedIndex.value < filteredCollaborators.value.length) {
+    selectCollaborator(filteredCollaborators.value[highlightedIndex.value])
+  }
+}
+
+const hideAutocompleteDelayed = () => {
+  setTimeout(() => { showAutocomplete.value = false }, 150)
+}
 
 const shareLabel = computed(() => {
   if (props.shareIndex !== undefined) {
@@ -251,8 +358,8 @@ const shareLabel = computed(() => {
 const statusDotClass = computed(() => {
   switch (props.status) {
     case 'active': return 'bg-success'
-    case 'unconfirmed': return 'bg-error'
-    case 'unclaimed': return 'bg-warning'
+    case 'unconfirmed': return 'bg-amber-500'
+    case 'unclaimed': return 'bg-amber-400'
     default: return 'bg-ditto-grey'
   }
 })
@@ -276,9 +383,9 @@ const formatShortDate = (dateStr: string): string => {
 const statusText = computed(() => {
   switch (props.status) {
     case 'active':
-      return props.activeSince ? `Since ${formatShortDate(props.activeSince)}` : 'Active'
+      return props.activeSince ? `Active since ${formatShortDate(props.activeSince)}` : 'Active'
     case 'unconfirmed':
-      return 'Pending'
+      return 'Pending confirmation'
     case 'unclaimed':
       return 'Unclaimed'
     default:

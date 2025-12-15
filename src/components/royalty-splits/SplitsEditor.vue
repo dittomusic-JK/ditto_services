@@ -1,5 +1,10 @@
 <template>
-  <div class="bg-lighter-grey border-t border-b-2 border-faded-grey px-3 sm:px-6 py-4 rounded-b-xl">
+  <div 
+    class="bg-lighter-grey border-t border-b-2 border-faded-grey px-3 sm:px-6 py-4 rounded-b-xl"
+    @keydown.escape="$emit('close')"
+    @keydown.enter.ctrl="handleSave"
+    @keydown.enter.meta="handleSave"
+  >
     <!-- User's split summary -->
     <div class="flex items-center gap-3 sm:gap-4 pb-4 border-b border-faded-grey">
       <div>
@@ -8,7 +13,14 @@
       </div>
       <div>
         <span class="text-xs text-ditto-grey font-satoshi">Your Split:</span>
-        <p class="text-sm font-bold text-ditto-purple font-satoshi">{{ userShare }}%</p>
+        <div class="flex items-center gap-1.5">
+          <p class="text-sm font-bold text-brand-secondary font-satoshi">{{ activeUserShare }}%</p>
+          <template v-if="hasPendingChanges">
+            <span class="text-ditto-grey">→</span>
+            <p class="text-sm font-bold text-amber-500 font-satoshi">{{ userShare }}%</p>
+            <span class="text-[10px] text-amber-500 font-satoshi">(pending)</span>
+          </template>
+        </div>
       </div>
       <DonutChart
         :segments="userDonutSegments"
@@ -60,9 +72,14 @@
         :email="newSplit.email"
         :share="newSplit.share"
         :is-editable="true"
+        :known-collaborators="knownCollaborators"
+        :current-total-share="currentTotalShare"
         @update="handleNewSplitUpdate"
         @remove="clearNewSplit"
       />
+      <p class="text-xs text-ditto-grey font-satoshi mt-2 hidden sm:block">
+        <kbd class="px-1.5 py-0.5 bg-white border border-faded-grey rounded text-[10px]">⌘</kbd> + <kbd class="px-1.5 py-0.5 bg-white border border-faded-grey rounded text-[10px]">Enter</kbd> to save · <kbd class="px-1.5 py-0.5 bg-white border border-faded-grey rounded text-[10px]">Esc</kbd> to close
+      </p>
     </div>
 
     <!-- Action buttons -->
@@ -138,7 +155,24 @@ const props = defineProps<{
   existingSplits: Collaborator[]
   otherTracks: TrackSplit[]
   hasChanges?: boolean
+  knownCollaborators?: { name: string; email: string }[]
 }>()
+
+// Calculate total share already allocated (100 - userShare)
+const currentTotalShare = computed(() => 100 - props.userShare)
+
+// Check if there are pending changes (unconfirmed splits)
+const hasPendingChanges = computed(() => 
+  props.existingSplits.some(s => s.status === 'unconfirmed')
+)
+
+// Calculate what the user's share would be with only active splits
+const activeUserShare = computed(() => {
+  const activeTotal = props.existingSplits
+    .filter(s => s.status === 'active')
+    .reduce((sum, s) => sum + s.share, 0)
+  return 100 - activeTotal
+})
 
 const emit = defineEmits<{
   close: []
@@ -159,7 +193,7 @@ const newSplit = reactive({
 })
 
 const userDonutSegments = computed(() => [
-  { percentage: props.userShare, color: '#6C5CE7' }
+  { percentage: props.userShare, color: '#287EF7' } // brand-secondary blue
 ])
 
 const canAddSplit = computed(() => {

@@ -70,6 +70,7 @@
       :expanded-track-id="expandedTrackId"
       :release="release"
       :pending-changes="pendingChanges"
+      :known-collaborators="knownCollaborators"
       @toggle="toggleTrack"
       @save="handleSave"
       @add-split="handleAddSplit"
@@ -98,6 +99,14 @@
       @close="showFirstSplitModal = false"
       @copy-to-all="handleCopyFromFirstSplit"
     />
+
+    <!-- Toast notification -->
+    <Toast
+      :visible="toast.visible"
+      :message="toast.message"
+      :type="toast.type"
+      @close="toast.visible = false"
+    />
   </div>
 </template>
 
@@ -108,6 +117,7 @@ import ReleaseHeader from './ReleaseHeader.vue'
 import TrackGroup from './TrackGroup.vue'
 import CopySplitsModal from './CopySplitsModal.vue'
 import FirstSplitModal from './FirstSplitModal.vue'
+import Toast from '../ui/Toast.vue'
 
 const props = withDefaults(defineProps<{
   userType?: UserType
@@ -126,6 +136,43 @@ const pendingChanges = reactive<Record<string, boolean>>({})
 const showFirstSplitModal = ref(false)
 const hasShownFirstSplitModal = ref(false)
 const lastSavedTrackId = ref<string | null>(null)
+
+// Toast state
+const toast = reactive<{
+  visible: boolean
+  message: string
+  type: 'success' | 'info' | 'warning'
+}>({
+  visible: false,
+  message: '',
+  type: 'success'
+})
+
+let toastTimeout: ReturnType<typeof setTimeout> | null = null
+
+const showToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+  if (toastTimeout) clearTimeout(toastTimeout)
+  toast.message = message
+  toast.type = type
+  toast.visible = true
+  toastTimeout = setTimeout(() => {
+    toast.visible = false
+  }, 3000)
+}
+
+// Known collaborators (in real app, this would come from API based on user's history)
+const knownCollaborators = [
+  { name: 'Rema', email: 'rema@mavin.com' },
+  { name: 'Ayra Starr', email: 'ayra@mavin.com' },
+  { name: 'Burna Boy', email: 'burna@spaceship.com' },
+  { name: 'Wizkid', email: 'wiz@starboy.com' },
+  { name: 'Tems', email: 'tems@leadingvibe.com' },
+  { name: 'CKay', email: 'ckay@chocolatecity.com' },
+  { name: 'Fireboy DML', email: 'fireboy@ybnl.com' },
+  { name: 'Omah Lay', email: 'omah@keystoneagency.com' },
+  { name: 'Asake', email: 'asake@ybnl.com' },
+  { name: 'Primary Songwriter', email: 'songwriter@ascap.com' },
+]
 
 // Copy modal state
 const copyModal = reactive<{
@@ -409,12 +456,13 @@ const handleSave = (trackId: string) => {
   
   pendingChanges[trackId] = false
   lastSavedTrackId.value = trackId
-  console.log('Saving splits for track:', trackId)
   
-  // Show first split modal if this is the first one
+  // Show first split modal if this is the first one, otherwise show toast
   if (isFirstSplit) {
     hasShownFirstSplitModal.value = true
     showFirstSplitModal.value = true
+  } else {
+    showToast('Splits saved successfully')
   }
 }
 
@@ -438,9 +486,11 @@ const handleRemoveSplit = (trackId: string, splitId: string) => {
   if (track) {
     const splitIndex = track.splits.findIndex(s => s.id === splitId)
     if (splitIndex > -1) {
+      const removedName = track.splits[splitIndex].name
       track.splits.splice(splitIndex, 1)
       track.userShare = Math.max(0, 100 - track.splits.reduce((sum, s) => sum + s.share, 0))
       pendingChanges[trackId] = true
+      showToast(`${removedName} removed from split`)
     }
   }
 }
@@ -451,7 +501,11 @@ const handleEditSplit = (trackId: string, splitId: string) => {
 }
 
 const handleResendConfirmation = (trackId: string, splitId: string) => {
-  console.log('Resend confirmation:', trackId, splitId)
+  const track = release.tracks.find(t => t.trackId === trackId)
+  const split = track?.splits.find(s => s.id === splitId)
+  if (split) {
+    showToast(`Confirmation email sent to ${split.email}`, 'info')
+  }
 }
 
 const handleCopyFrom = (targetTrackId: string, sourceTrackId: string) => {
@@ -515,6 +569,7 @@ const handleCopyConfirm = (mode: 'add' | 'replace', selectedTrackIds: string[]) 
   if (sourceTrack) {
     const selectedTracks = release.tracks.filter(t => selectedTrackIds.includes(t.trackId))
     applyCopyToTracks(sourceTrack, selectedTracks, mode)
+    showToast(`Splits copied to ${selectedTrackIds.length} track${selectedTrackIds.length > 1 ? 's' : ''}`)
   }
   copyModal.show = false
 }
