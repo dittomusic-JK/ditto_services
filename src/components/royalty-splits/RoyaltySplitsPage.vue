@@ -121,7 +121,7 @@ import Toast from '../ui/Toast.vue'
 
 const props = withDefaults(defineProps<{
   userType?: UserType
-  demo?: 'populated' | 'empty'
+  demo?: 'populated' | 'empty' | 'edge-case'
 }>(), {
   userType: 'subscription',
   demo: 'populated'
@@ -408,8 +408,64 @@ const populatedRelease: Release = {
   ]
 }
 
+// Edge case release with 50 tracks and long titles
+const longTrackNames = [
+  "The Long and Winding Road to Nowhere (Extended Deluxe Version)",
+  "I Can't Stop Thinking About You Every Single Day of My Life",
+  "When the Moon Rises Over the Mountain and the Stars Come Out to Play",
+  "Somewhere Between Yesterday and Tomorrow (Acoustic Reimagined)",
+  "Dancing Through the Night Until the Morning Light Appears",
+  "The Way You Make Me Feel When We're Together Again",
+  "Under the Bridge Where We First Met (feat. Special Guest)",
+  "Chasing Shadows in the Dark (Director's Cut Extended Mix)",
+  "Memories of a Summer Day That We Will Never Forget",
+  "Walking Down the Street of Dreams (Remastered 2025)"
+]
+
+const edgeCaseRelease: Release = {
+  id: '3',
+  title: 'The Complete Collection: Greatest Hits and Rare B-Sides (50th Anniversary Super Deluxe Edition)',
+  artwork: 'https://picsum.photos/seed/album3/400/400',
+  accountHolder: 'Oluwafisayo Isa (me)',
+  tracks: Array.from({ length: 50 }, (_, i) => {
+    const trackNum = i + 1
+    const baseName = longTrackNames[i % longTrackNames.length]
+    const hasSplits = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45].includes(trackNum)
+    
+    return {
+      trackId: `t${trackNum}`,
+      trackNumber: trackNum,
+      trackName: `${baseName}${trackNum > 10 ? ` - Part ${Math.ceil(trackNum / 10)}` : ''}`,
+      splits: hasSplits ? [
+        {
+          id: `s${trackNum}_1`,
+          name: `Collaborator ${trackNum}A`,
+          email: `collab${trackNum}a@example.com`,
+          share: 15,
+          status: trackNum % 3 === 0 ? 'pending' as const : 'active' as const,
+          activeSince: trackNum % 3 === 0 ? undefined : '1st Jan 2025'
+        },
+        {
+          id: `s${trackNum}_2`,
+          name: `Collaborator ${trackNum}B`,
+          email: `collab${trackNum}b@example.com`,
+          share: 10,
+          status: 'active' as const,
+          activeSince: '1st Jan 2025'
+        }
+      ] : [],
+      userShare: hasSplits ? 75 : 100
+    }
+  })
+}
+
 // Select release based on demo prop
-const release = reactive<Release>(props.demo === 'empty' ? emptyRelease : populatedRelease)
+const getRelease = () => {
+  if (props.demo === 'empty') return emptyRelease
+  if (props.demo === 'edge-case') return edgeCaseRelease
+  return populatedRelease
+}
+const release = reactive<Release>(getRelease())
 
 // Track grouping computed properties
 const tracksWithConfirmedSplits = computed(() =>
@@ -535,7 +591,7 @@ const handleCopyFrom = (targetTrackId: string, sourceTrackId: string) => {
   const targetTrack = release.tracks.find(t => t.trackId === targetTrackId)
   
   if (sourceTrack && targetTrack) {
-    // Check for conflicts
+    // Check for conflicts - show modal if target has existing splits
     if (targetTrack.splits.length > 0) {
       copyModal.sourceTrackId = sourceTrackId
       copyModal.sourceTrackName = sourceTrack.trackName
@@ -544,8 +600,9 @@ const handleCopyFrom = (targetTrackId: string, sourceTrackId: string) => {
       copyModal.targetTracks = [targetTrack]
       copyModal.show = true
     } else {
-      // No conflicts, copy directly
-      applyCopyToTracks(sourceTrack, [targetTrack], 'add')
+      // No conflicts, copy directly (replace mode)
+      applyCopyToTracks(sourceTrack, [targetTrack])
+      showToast('Splits copied successfully')
     }
   }
 }
@@ -586,46 +643,30 @@ const handleCopyFromFirstSplit = () => {
 }
 
 // Handle copy confirmation from modal
-const handleCopyConfirm = (mode: 'add' | 'replace', selectedTrackIds: string[]) => {
+const handleCopyConfirm = (_mode: 'replace', selectedTrackIds: string[]) => {
   const sourceTrack = release.tracks.find(t => t.trackId === copyModal.sourceTrackId)
   if (sourceTrack) {
     const selectedTracks = release.tracks.filter(t => selectedTrackIds.includes(t.trackId))
-    applyCopyToTracks(sourceTrack, selectedTracks, mode)
+    applyCopyToTracks(sourceTrack, selectedTracks)
     showToast(`Splits copied to ${selectedTrackIds.length} track${selectedTrackIds.length > 1 ? 's' : ''}`)
   }
   copyModal.show = false
 }
 
-// Apply copy to multiple tracks
-const applyCopyToTracks = (sourceTrack: TrackSplit, targetTracks: TrackSplit[], mode: 'add' | 'replace') => {
+// Apply copy to multiple tracks (always replace mode)
+const applyCopyToTracks = (sourceTrack: TrackSplit, targetTracks: TrackSplit[]) => {
   targetTracks.forEach(targetTrack => {
     const track = release.tracks.find(t => t.trackId === targetTrack.trackId)
     if (track) {
-      if (mode === 'replace') {
-        // Replace mode: just copy all splits
-        const copiedSplits: Collaborator[] = sourceTrack.splits.map(s => ({
-          id: `s${Date.now()}_${Math.random()}`,
-          name: s.name,
-          email: s.email,
-          share: s.share,
-          status: 'pending' as const
-        }))
-        track.splits = copiedSplits
-      } else {
-        // Add mode: only add splits that don't already exist (by email)
-        const existingEmails = new Set(track.splits.map(s => s.email.toLowerCase()))
-        const newSplits: Collaborator[] = sourceTrack.splits
-          .filter(s => !existingEmails.has(s.email.toLowerCase()))
-          .map(s => ({
-            id: `s${Date.now()}_${Math.random()}`,
-            name: s.name,
-            email: s.email,
-            share: s.share,
-            status: 'pending' as const
-          }))
-        track.splits = [...track.splits, ...newSplits]
-      }
-      
+      // Replace all splits with copied ones
+      const copiedSplits: Collaborator[] = sourceTrack.splits.map(s => ({
+        id: `s${Date.now()}_${Math.random()}`,
+        name: s.name,
+        email: s.email,
+        share: s.share,
+        status: 'pending' as const
+      }))
+      track.splits = copiedSplits
       track.userShare = Math.max(0, 100 - track.splits.reduce((sum, s) => sum + s.share, 0))
       pendingChanges[track.trackId] = true
     }
