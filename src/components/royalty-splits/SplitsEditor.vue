@@ -22,13 +22,6 @@
           </template>
         </div>
       </div>
-      <DonutChart
-        :segments="userDonutSegments"
-        :user-share="userShare"
-        :size="48"
-        :stroke-width="8"
-        :show-badge="false"
-      />
     </div>
 
     <!-- Splits section header -->
@@ -150,7 +143,6 @@
 import { ref, computed, reactive } from 'vue'
 import type { Collaborator, TrackSplit } from '../../types'
 import SplitRow from './SplitRow.vue'
-import DonutChart from './DonutChart.vue'
 
 const props = defineProps<{
   accountHolder: string
@@ -194,10 +186,6 @@ const newSplit = reactive({
   email: '',
   share: 0
 })
-
-const userDonutSegments = computed(() => [
-  { percentage: props.userShare, color: '#287EF7' } // brand-secondary blue
-])
 
 // Check if the email already exists in splits
 const duplicateCollaborator = computed(() => {
