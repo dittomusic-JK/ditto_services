@@ -13,8 +13,10 @@
       <div>
         <span class="text-xs font-satoshi" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">Your Split:</span>
         <div class="flex items-center gap-1.5">
-          <p class="text-sm font-bold text-brand-secondary font-satoshi">{{ activeUserShare }}%</p>
-          <template v-if="hasPendingChanges">
+          <!-- For RLS: just show userShare directly (no pending concept) -->
+          <p class="text-sm font-bold font-satoshi" :class="isRLS ? 'text-rls-accent' : 'text-brand-secondary'">{{ isRLS ? userShare : activeUserShare }}%</p>
+          <!-- Pending indicator - not shown for RLS -->
+          <template v-if="hasPendingChanges && !isRLS">
             <span class="text-ditto-grey">→</span>
             <p class="text-sm font-bold text-amber-500 font-satoshi">{{ userShare }}%</p>
             <span class="text-[10px] text-amber-500 font-satoshi">(pending)</span>

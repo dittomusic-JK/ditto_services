@@ -138,7 +138,7 @@
       </div>
 
       <!-- Action buttons -->
-      <div class="flex items-center gap-1">
+      <div class="flex items-center gap-1 ml-auto">
         <!-- Edit share icon (for active or rejected splits) -->
         <div v-if="!isEditable && !isEditingShare && (status === 'active' || status === 'rejected' || (isRLS && status === 'unclaimed'))" class="relative group">
           <button
