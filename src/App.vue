@@ -14,6 +14,24 @@
           >
             Services
           </router-link>
+          <router-link 
+            to="/royalty-splits" 
+            class="px-4 py-2 rounded-full text-sm font-medium font-satoshi transition-colors"
+            :class="$route.path === '/royalty-splits' 
+              ? 'bg-ditto-purple text-white' 
+              : 'text-ditto-grey hover:bg-light-grey'"
+          >
+            Splits
+          </router-link>
+          <router-link 
+            to="/royalty-splits-rls" 
+            class="px-4 py-2 rounded-full text-sm font-medium font-satoshi transition-colors"
+            :class="$route.path === '/royalty-splits-rls' 
+              ? 'bg-[#9e77ff] text-white' 
+              : 'text-ditto-grey hover:bg-light-grey'"
+          >
+            Splits (RLS)
+          </router-link>
         </div>
       </div>
     </nav>

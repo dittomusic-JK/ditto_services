@@ -1,14 +1,17 @@
 <template>
   <div 
-    class="bg-lighter-grey border-t border-b-2 border-faded-grey px-3 sm:px-6 py-4 rounded-b-xl"
-    @keydown.escape="$emit('close')"
-    @keydown.enter.ctrl="handleSave"
-    @keydown.enter.meta="handleSave"
+    ref="containerRef"
+    class="border-t border-b-2 px-3 sm:px-6 py-4 rounded-b-xl focus:outline-none"
+    :class="isRLS ? 'bg-rls-bg-elevated border-rls-border' : 'bg-lighter-grey border-faded-grey'"
+    tabindex="-1"
+    @keydown.escape.prevent="$emit('close')"
+    @keydown.enter.ctrl.prevent="handleSave"
+    @keydown.enter.meta.prevent="handleSave"
   >
     <!-- User's split summary -->
-    <div class="flex items-center gap-3 sm:gap-4 pb-4 border-b border-faded-grey">
+    <div class="flex items-center gap-3 sm:gap-4 pb-4 border-b" :class="isRLS ? 'border-rls-border' : 'border-faded-grey'">
       <div>
-        <span class="text-xs text-ditto-grey font-satoshi">Your Split:</span>
+        <span class="text-xs font-satoshi" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">Your Split:</span>
         <div class="flex items-center gap-1.5">
           <p class="text-sm font-bold text-brand-secondary font-satoshi">{{ activeUserShare }}%</p>
           <template v-if="hasPendingChanges">
@@ -22,12 +25,12 @@
 
     <!-- Splits section header -->
     <div class="flex items-center justify-between py-4">
-      <h4 class="text-base font-bold text-ditto-blue font-poppins">
+      <h4 class="text-base font-bold font-poppins" :class="isRLS ? 'text-rls-text' : 'text-ditto-blue'">
         Splits{{ existingSplits.length > 0 ? ` (${existingSplits.length})` : '' }}
       </h4>
       <button
         @click="$emit('close')"
-        class="p-1 text-ditto-grey hover:text-ditto-blue transition-colors"
+        class="p-1 transition-colors" :class="isRLS ? 'text-rls-text-secondary hover:text-rls-text' : 'text-ditto-grey hover:text-ditto-blue'"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
@@ -36,7 +39,7 @@
     </div>
 
     <!-- Existing splits (read-only) -->
-    <div v-if="existingSplits.length > 0" class="divide-y divide-faded-grey">
+    <div v-if="existingSplits.length > 0" class="divide-y" :class="isRLS ? 'divide-rls-border' : 'divide-faded-grey'">
       <SplitRow
         v-for="(split, index) in existingSplits"
         :key="split.id"
@@ -50,81 +53,51 @@
         :is-editable="false"
         :can-edit-email="false"
         :current-total-share="currentTotalShare - split.share"
+        :is-r-l-s="isRLS"
         @remove="$emit('remove-split', split.id)"
         @update-share="(newShare) => $emit('update-share', split.id, newShare)"
         @resend="$emit('resend-confirmation', split.id)"
       />
     </div>
 
-    <!-- New split entry section -->
-    <div class="border-t border-faded-grey pt-4">
-      <!-- Show form when adding -->
-      <template v-if="isAddingNew">
-        <SplitRow
-          :name="newSplit.name"
-          :email="newSplit.email"
-          :share="newSplit.share"
-          :is-editable="true"
-          :known-collaborators="availableCollaborators"
-          :current-total-share="currentTotalShare"
-          @update="handleNewSplitUpdate"
-          @remove="cancelAddNew"
-        />
-        <!-- Duplicate collaborator warning -->
-        <p v-if="duplicateCollaborator" class="text-xs text-amber-600 font-satoshi mt-2 flex items-center gap-1.5">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M8 5V8.5M8 10.5V10.51" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          {{ duplicateCollaborator.name }} is already on this track. Edit their existing split instead.
-        </p>
-        <!-- Add button when form is valid -->
-        <div class="flex items-center gap-2 mt-3">
-          <button
-            @click="confirmAddSplit"
-            :disabled="!canAddSplit"
-            class="flex items-center gap-1.5 px-4 py-2 bg-brand-secondary text-white rounded-full text-sm font-medium font-satoshi hover:bg-brand-secondary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 3V11M3 7H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            + Add Another
-          </button>
-          <button
-            @click="cancelAddNew"
-            class="px-4 py-2 text-sm font-medium text-ditto-grey font-satoshi hover:text-ditto-blue transition-colors"
-          >
-            Clear
-          </button>
-        </div>
-      </template>
-      
-      <!-- Show "Add new split" button when not adding -->
-      <button
-        v-else
-        @click="startAddNew"
-        class="flex items-center gap-2 px-4 py-2.5 border border-dashed border-faded-grey rounded-xl text-sm font-medium text-ditto-grey font-satoshi hover:border-brand-secondary hover:text-brand-secondary transition-colors w-full justify-center"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 4V12M4 8H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- New split entry row (always shown) -->
+    <div class="border-t pt-4" :class="isRLS ? 'border-rls-border' : 'border-faded-grey'">
+      <SplitRow
+        ref="newSplitRowRef"
+        :name="newSplit.name"
+        :email="newSplit.email"
+        :share="newSplit.share"
+        :is-editable="true"
+        :known-collaborators="availableCollaborators"
+        :current-total-share="currentTotalShare"
+        :is-r-l-s="isRLS"
+        @update="handleNewSplitUpdate"
+        @remove="clearNewSplit"
+      />
+      <!-- Duplicate collaborator warning -->
+      <p v-if="duplicateCollaborator" class="text-xs text-amber-600 font-satoshi mt-2 flex items-center gap-1.5">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8 5V8.5M8 10.5V10.51" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        Add new split
-      </button>
+        {{ duplicateCollaborator.name }} is already on this track. Edit their existing split instead.
+      </p>
       
       <!-- Keyboard shortcut hint -->
-      <p v-if="!isAddingNew" class="text-xs text-ditto-grey font-satoshi mt-3 hidden sm:block text-center">
-        <kbd class="px-1.5 py-0.5 bg-white border border-faded-grey rounded text-[10px]">⌘</kbd> + <kbd class="px-1.5 py-0.5 bg-white border border-faded-grey rounded text-[10px]">Enter</kbd> to save · <kbd class="px-1.5 py-0.5 bg-white border border-faded-grey rounded text-[10px]">Esc</kbd> to close
+      <p class="text-xs font-satoshi mt-3 hidden sm:block text-center" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">
+        <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">⌘</kbd> + <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">Enter</kbd> to save · <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">Esc</kbd> to close
       </p>
     </div>
 
     <!-- Action buttons -->
-    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-faded-grey mt-4">
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t mt-4" :class="isRLS ? 'border-rls-border' : 'border-faded-grey'">
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
         <!-- Copy Splits button (opens modal directly) -->
         <button
           v-if="otherTracks.length > 0"
           @click="$emit('open-copy-modal')"
-          class="flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto px-4 py-2 border border-faded-grey rounded-full text-sm font-medium text-ditto-grey font-satoshi hover:border-brand-secondary hover:text-brand-secondary transition-colors"
+          class="flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto px-4 py-2 border rounded-full text-sm font-medium font-satoshi transition-colors"
+          :class="isRLS ? 'border-rls-border text-rls-text-secondary hover:border-rls-accent hover:text-rls-accent' : 'border-faded-grey text-ditto-grey hover:border-brand-secondary hover:text-brand-secondary'"
         >
           <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
             <path d="M15 6H8.25C7.42 6 6.75 6.67 6.75 7.5V14.25C6.75 15.08 7.42 15.75 8.25 15.75H15C15.83 15.75 16.5 15.08 16.5 14.25V7.5C16.5 6.67 15.83 6 15 6Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -150,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch } from 'vue'
+import { ref, computed, reactive, watch, onMounted } from 'vue'
 import type { Collaborator, TrackSplit } from '../../types'
 import SplitRow from './SplitRow.vue'
 
@@ -161,6 +134,7 @@ const props = defineProps<{
   otherTracks: TrackSplit[]
   hasChanges?: boolean
   knownCollaborators?: { name: string; email: string }[]
+  isRLS?: boolean
 }>()
 
 // Calculate total share already allocated (100 - userShare)
@@ -190,7 +164,13 @@ const emit = defineEmits<{
   'dirty-change': [isDirty: boolean, pendingSplit: { name: string; email: string; share: number } | null]
 }>()
 
-const isAddingNew = ref(false)
+const containerRef = ref<HTMLDivElement | null>(null)
+const newSplitRowRef = ref<InstanceType<typeof SplitRow> | null>(null)
+
+// Focus container on mount so keyboard shortcuts work
+onMounted(() => {
+  containerRef.value?.focus()
+})
 
 const newSplit = reactive({
   name: '',
@@ -242,32 +222,14 @@ const canSave = computed(() => {
   return props.hasChanges || canAddSplit.value
 })
 
-// Start adding a new split
-const startAddNew = () => {
-  isAddingNew.value = true
-}
-
-// Cancel adding new split
-const cancelAddNew = () => {
-  clearNewSplit()
-  isAddingNew.value = false
-}
-
-// Confirm adding the new split
-const confirmAddSplit = () => {
-  if (canAddSplit.value) {
-    emit('add-split', { ...newSplit })
-    clearNewSplit()
-    isAddingNew.value = false
-  }
-}
-
 // Save handler - if there's a valid new split, add it first then save
 const handleSave = () => {
+  // Only proceed if there's something to save
+  if (!canSave.value) return
+  
   if (canAddSplit.value) {
     emit('add-split', { ...newSplit })
     clearNewSplit()
-    isAddingNew.value = false
   }
   emit('save')
 }

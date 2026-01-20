@@ -175,6 +175,43 @@ You can apply the theme on any DOM node, not just the `body`
   --ditto-colors-light-dark-ditto-text-fill: rgba(255, 255, 255, 1);
 }
 
+/* RLS (Label Services) Dark Theme - Brand Guide Colors */
+[data-ditto-theme="rls"] {
+  /* Backgrounds */
+  --rls-bg: #1f1f1f;           /* Ash Silver */
+  --rls-bg-elevated: #2a2a2c;  /* Silk Stone */
+  --rls-card: #313135;         /* Stone */
+  
+  /* Text */
+  --rls-text: #ffffff;         /* Smoke Haze */
+  --rls-text-secondary: #aaaacc; /* Subtle Plum */
+  --rls-text-muted: #626984;   /* Ditto Grey */
+  
+  /* Accents */
+  --rls-accent: #9e77ff;       /* Mauve Linen - primary purple */
+  --rls-highlight: #ffb100;    /* Cosmic Coral - orange/gold */
+  --rls-success: #00ff99;      /* Aqua Bronze - bright green */
+  --rls-error: #ef4444;        /* Dawn Frost - red */
+  --rls-info: #6aaeff;         /* Marine Lilac - light blue */
+  
+  /* Borders */
+  --rls-border: #313135;       /* Stone */
+  --rls-border-light: #44444c; /* Darker Grey */
+  
+  /* Override framework variables for RLS theme */
+  --blue: #ffffff;
+  --ditto-grey: #aaaacc;
+  --brand-secondary: #9e77ff;
+  --brand-primary: #9e77ff;
+  --success: #00ff99;
+  --error: #ef4444;
+  --warning: #ffb100;
+  --faded-grey: #44444c;
+  --light-grey: #313135;
+  --lighter-grey: #2a2a2c;
+  --medium-grey: #44444c;
+}
+
 :root {
   --animate-spin: spin 1s linear infinite;
 }

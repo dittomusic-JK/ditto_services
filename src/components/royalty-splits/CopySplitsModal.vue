@@ -14,10 +14,10 @@
             Copy Splits
           </h2>
           
-          <!-- Step 1: Select source track (if mode allows) -->
+        <!-- Step 1: Select source track (if mode allows) -->
           <template v-if="mode === 'select-source'">
             <p class="text-sm text-ditto-grey font-satoshi mb-3">
-              Select a track to copy splits from:
+              Select a track to copy splits from{{ currentTrackName ? ` to "${currentTrackName}"` : '' }}:
             </p>
             <div class="flex flex-wrap gap-2 mb-4 max-h-32 overflow-y-auto">
               <button
@@ -61,8 +61,8 @@
             </div>
           </div>
 
-          <!-- Select header row (target tracks) -->
-          <div v-if="selectedSourceTrack" class="flex items-center justify-between mb-3">
+          <!-- Select header row (target tracks) - only show if not single-target mode -->
+          <div v-if="selectedSourceTrack && !isSingleTargetMode" class="flex items-center justify-between mb-3">
             <p class="text-sm font-semibold text-ditto-blue font-satoshi">Select tracks to copy to:</p>
             <button 
               @click="toggleSelectAll"
@@ -73,8 +73,8 @@
           </div>
         </div>
 
-        <!-- Scrollable track list (target tracks) -->
-        <div v-if="selectedSourceTrack" class="flex-1 overflow-y-auto px-4 sm:px-6 min-h-0">
+        <!-- Scrollable track list (target tracks) - only show if not single-target mode -->
+        <div v-if="selectedSourceTrack && !isSingleTargetMode" class="flex-1 overflow-y-auto px-4 sm:px-6 min-h-0">
           <div class="flex flex-wrap gap-2 pb-4">
             <button
               v-for="track in availableTargetTracks"
@@ -115,8 +115,21 @@
           </div>
         </div>
         
-        <!-- Confirmation warning for tracks with existing splits -->
-        <div v-if="selectedSourceTrack && selectedHaveConflicts" class="px-4 sm:px-6 pb-4">
+        <!-- Confirmation warning for tracks with existing splits (single target mode) -->
+        <div v-if="selectedSourceTrack && isSingleTargetMode && currentTrackHasSplits" class="px-4 sm:px-6 pb-4">
+          <div class="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" class="shrink-0 text-amber-600 mt-0.5">
+              <path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p class="text-xs text-amber-800 font-satoshi">
+              <strong>This track has existing splits.</strong>
+              Confirming will replace them with the new splits.
+            </p>
+          </div>
+        </div>
+
+        <!-- Confirmation warning for tracks with existing splits (multi-target mode) -->
+        <div v-if="selectedSourceTrack && !isSingleTargetMode && selectedHaveConflicts" class="px-4 sm:px-6 pb-4">
           <div class="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" class="shrink-0 text-amber-600 mt-0.5">
               <path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -139,10 +152,10 @@
             </button>
             <button
               @click="handleConfirm"
-              :disabled="!selectedSourceTrack || selectedTracks.size === 0"
+              :disabled="!selectedSourceTrack || (!isSingleTargetMode && selectedTracks.size === 0)"
               class="px-6 py-2.5 bg-ditto-blue text-white rounded-full text-sm font-semibold font-satoshi transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-ditto-blue/90"
             >
-              Copy to {{ selectedTracks.size }} track{{ selectedTracks.size !== 1 ? 's' : '' }}
+              {{ isSingleTargetMode ? 'Copy Splits' : `Copy to ${selectedTracks.size} track${selectedTracks.size !== 1 ? 's' : ''}` }}
             </button>
           </div>
         </div>
@@ -166,11 +179,28 @@ const props = withDefaults(defineProps<{
   sourceSplits?: Collaborator[]
   // All tracks that can be targets
   targetTracks: TrackSplit[]
-  // Current track to exclude from targets (optional)
+  // Current track ID - when provided in select-source mode, copy directly to this track only
   currentTrackId?: string
 }>(), {
   mode: 'copy-to',
   sourceTracks: () => []
+})
+
+// Single target mode: when currentTrackId is provided in select-source mode, we copy directly to that track
+const isSingleTargetMode = computed(() => props.mode === 'select-source' && !!props.currentTrackId)
+
+// Get current track name for display
+const currentTrackName = computed(() => {
+  if (!props.currentTrackId) return null
+  const track = props.targetTracks.find(t => t.trackId === props.currentTrackId)
+  return track?.trackName ?? null
+})
+
+// Check if current track has existing splits (for warning)
+const currentTrackHasSplits = computed(() => {
+  if (!props.currentTrackId) return false
+  const track = props.targetTracks.find(t => t.trackId === props.currentTrackId)
+  return (track?.splits.length ?? 0) > 0
 })
 
 const emit = defineEmits<{
@@ -255,6 +285,12 @@ const handleConfirm = () => {
   const sourceId = selectedSourceTrack.value?.trackId !== 'legacy-source' 
     ? selectedSourceTrack.value?.trackId 
     : undefined
-  emit('confirm', 'replace', Array.from(selectedTracks.value), sourceId)
+  
+  // In single target mode, copy to current track only
+  const targetIds = isSingleTargetMode.value && props.currentTrackId
+    ? [props.currentTrackId]
+    : Array.from(selectedTracks.value)
+  
+  emit('confirm', 'replace', targetIds, sourceId)
 }
 </script>

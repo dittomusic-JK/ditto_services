@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center gap-2">
     <!-- Single bar showing ACTUAL current distribution -->
-    <div class="relative group flex h-2 w-24 rounded-full overflow-hidden bg-light-grey cursor-help">
+    <div class="relative group flex h-2 w-24 rounded-full overflow-hidden cursor-help" :class="isRLS ? 'bg-white/10' : 'bg-light-grey'">
       <!-- Your share (actual - what you're receiving now) - using brand blue for visibility -->
       <div
         class="h-full bg-brand-secondary transition-all"
@@ -15,7 +15,7 @@
       />
       
       <!-- Tooltip on hover -->
-      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-ditto-blue text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg" :class="isRLS ? 'bg-rls-bg-elevated border border-rls-border' : 'bg-ditto-blue'">
         <p class="text-[10px] text-white/70 mb-1.5">Current active split</p>
         <div class="flex flex-col gap-1">
           <div class="flex items-center gap-2">
@@ -27,12 +27,12 @@
             <span>Collaborators: {{ confirmedShare }}%</span>
           </div>
         </div>
-        <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ditto-blue" />
+        <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" :class="isRLS ? 'border-t-rls-bg-elevated' : 'border-t-ditto-blue'" />
       </div>
     </div>
     
     <!-- Your actual percentage -->
-    <span class="text-xs font-semibold text-brand-secondary font-satoshi whitespace-nowrap">
+    <span class="text-xs font-semibold font-satoshi whitespace-nowrap" :class="isRLS ? 'text-rls-accent' : 'text-brand-secondary'">
       {{ actualUserShare }}%
     </span>
     
@@ -61,7 +61,7 @@
       v-if="unclaimedCount && unclaimedCount > 0" 
       class="relative group"
     >
-      <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[10px] font-medium font-satoshi cursor-help">
+      <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium font-satoshi cursor-help" :class="isRLS ? 'bg-warning/20 text-warning' : 'bg-orange-100 text-orange-600'">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
           <circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.5"/>
           <path d="M5 3V5.5M5 7V7.01" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
@@ -70,9 +70,9 @@
       </span>
       
       <!-- Tooltip -->
-      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-ditto-blue text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg" :class="isRLS ? 'bg-rls-bg-elevated border border-rls-border' : 'bg-ditto-blue'">
         {{ unclaimedCount }} collaborator{{ unclaimedCount > 1 ? 's need' : ' needs' }} to create a Ditto account
-        <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ditto-blue" />
+        <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" :class="isRLS ? 'border-t-rls-bg-elevated' : 'border-t-ditto-blue'" />
       </div>
     </div>
   </div>
@@ -85,6 +85,7 @@ const props = defineProps<{
   confirmedShare: number
   pendingCount: number
   unclaimedCount?: number
+  isRLS?: boolean
 }>()
 
 // Actual user share = what's left after confirmed splits

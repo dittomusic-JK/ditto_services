@@ -24,18 +24,23 @@
       <!-- Autocomplete dropdown -->
       <div
         v-if="isEditable && showAutocomplete && filteredCollaborators.length > 0"
-        class="absolute top-full left-0 right-0 mt-1 bg-white border border-faded-grey rounded-lg shadow-lg py-1 z-20 max-h-40 overflow-y-auto"
+        class="absolute top-full left-0 right-0 mt-1 border rounded-lg shadow-lg py-1 z-20 max-h-40 overflow-y-auto"
+        :class="isRLS ? 'bg-rls-bg-elevated border-rls-border' : 'bg-white border-faded-grey'"
       >
         <button
           v-for="(collab, index) in filteredCollaborators"
           :key="collab.email"
           type="button"
           class="w-full px-3 py-2 text-left text-sm font-satoshi transition-colors"
-          :class="index === highlightedIndex ? 'bg-brand-secondary/10 text-brand-secondary' : 'text-ditto-blue hover:bg-light-grey'"
+          :class="index === highlightedIndex 
+            ? 'bg-brand-secondary/10 text-brand-secondary' 
+            : isRLS 
+              ? 'text-rls-text hover:bg-white/5' 
+              : 'text-ditto-blue hover:bg-light-grey'"
           @mousedown.prevent="selectCollaborator(collab)"
         >
           <span class="font-medium">{{ collab.name }}</span>
-          <span class="text-xs text-ditto-grey ml-2">{{ collab.email }}</span>
+          <span class="text-xs ml-2" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">{{ collab.email }}</span>
         </button>
       </div>
     </div>
@@ -197,13 +202,15 @@
         <!-- Mobile autocomplete dropdown -->
         <div
           v-if="isEditable && showAutocomplete && filteredCollaborators.length > 0"
-          class="absolute top-full left-0 right-0 mt-1 bg-white border border-faded-grey rounded-lg shadow-lg py-1 z-20 max-h-32 overflow-y-auto"
+          class="absolute top-full left-0 right-0 mt-1 border rounded-lg shadow-lg py-1 z-20 max-h-32 overflow-y-auto"
+          :class="isRLS ? 'bg-rls-bg-elevated border-rls-border' : 'bg-white border-faded-grey'"
         >
           <button
             v-for="collab in filteredCollaborators"
             :key="collab.email"
             type="button"
-            class="w-full px-3 py-2 text-left text-sm font-satoshi text-ditto-blue hover:bg-light-grey transition-colors"
+            class="w-full px-3 py-2 text-left text-sm font-satoshi transition-colors"
+            :class="isRLS ? 'text-rls-text hover:bg-white/5' : 'text-ditto-blue hover:bg-light-grey'"
             @mousedown.prevent="selectCollaborator(collab)"
           >
             <span class="font-medium">{{ collab.name }}</span>
@@ -320,11 +327,13 @@ const props = withDefaults(defineProps<{
   knownCollaborators?: KnownCollaborator[]
   currentTotalShare?: number // Total share already allocated (excluding this row)
   originalShare?: number // The share value before editing (for showing pending changes)
+  isRLS?: boolean
 }>(), {
   isEditable: false,
   canEditEmail: false,
   knownCollaborators: () => [],
-  currentTotalShare: 0
+  currentTotalShare: 0,
+  isRLS: false
 })
 
 const emit = defineEmits<{

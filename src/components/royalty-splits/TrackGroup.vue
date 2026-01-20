@@ -1,12 +1,12 @@
 <template>
-  <div class="bg-white rounded-2xl border border-faded-grey overflow-hidden">
+  <div class="rounded-2xl border overflow-hidden" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">
     <!-- Table header (desktop) -->
-    <div class="hidden sm:grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 items-center py-3 px-4 bg-lighter-grey border-b border-faded-grey">
-      <span class="text-xs text-ditto-grey font-satoshi w-8 text-center">#</span>
-      <span class="text-xs text-ditto-grey font-satoshi">Track</span>
-      <span class="text-xs text-ditto-grey font-satoshi w-16 text-center">Splits</span>
-      <span class="text-xs text-ditto-grey font-satoshi w-40">Distribution</span>
-      <span class="text-xs text-ditto-grey font-satoshi w-36 text-right">Actions</span>
+    <div class="hidden sm:grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 items-center py-3 px-4 border-b" :class="isRLS ? 'bg-rls-bg-elevated border-rls-border' : 'bg-lighter-grey border-faded-grey'">
+      <span class="text-xs font-satoshi w-8 text-center" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">#</span>
+      <span class="text-xs font-satoshi" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">Track</span>
+      <span class="text-xs font-satoshi w-16 text-center" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">Splits</span>
+      <span class="text-xs font-satoshi w-40" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">Distribution</span>
+      <span class="text-xs font-satoshi w-36 text-right" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">Actions</span>
     </div>
 
     <!-- Track rows -->
@@ -14,7 +14,8 @@
       <div
         v-for="track in tracks"
         :key="track.trackId"
-        class="border-b border-faded-grey last:border-b-0"
+        class="border-b last:border-b-0"
+        :class="isRLS ? 'border-rls-border' : 'border-faded-grey'"
       >
         <!-- Main row (desktop) -->
         <div 
@@ -28,12 +29,12 @@
           @keydown.space.prevent="$emit('toggle', track.trackId)"
         >
           <!-- Track number -->
-          <span class="text-base font-semibold text-ditto-blue font-satoshi w-8 text-center">
+          <span class="text-base font-semibold font-satoshi w-8 text-center" :class="isRLS ? 'text-rls-text' : 'text-ditto-blue'">
             {{ track.trackNumber }}
           </span>
 
           <!-- Track name -->
-          <span class="text-sm font-medium text-ditto-blue font-satoshi truncate">
+          <span class="text-sm font-medium font-satoshi truncate" :class="isRLS ? 'text-rls-text' : 'text-ditto-blue'">
             {{ track.trackName }}
           </span>
 
@@ -51,8 +52,9 @@
           <div class="w-40">
             <ShareBarEnhanced
               :confirmed-share="getConfirmedShare(track)"
-              :pending-count="getPendingCount(track)"
+              :pending-count="isRLS ? 0 : getPendingCount(track)"
               :unclaimed-count="getUnclaimedCount(track)"
+              :is-r-l-s="isRLS"
             />
           </div>
 
@@ -73,21 +75,19 @@
 
             <!-- Splits/Add button -->
             <button
-              v-if="track.splits.length === 0"
-              @click.stop="$emit('toggle', track.trackId)"
-              class="px-3 py-1.5 border border-brand-secondary/40 rounded-full text-xs font-medium text-brand-secondary font-satoshi hover:border-brand-secondary hover:bg-brand-secondary/5 transition-colors"
-            >
-              Add Split
-            </button>
-            <button
-              v-else
               @click.stop="$emit('toggle', track.trackId)"
               class="px-3 py-1.5 border rounded-full text-xs font-medium font-satoshi transition-colors"
               :class="expandedTrackId === track.trackId 
-                ? 'border-ditto-grey text-ditto-grey bg-white' 
-                : 'border-faded-grey text-ditto-grey hover:border-brand-secondary hover:text-brand-secondary'"
+                ? isRLS 
+                  ? 'border-rls-border text-rls-text-secondary bg-rls-bg-elevated' 
+                  : 'border-ditto-grey text-ditto-grey bg-white' 
+                : track.splits.length === 0
+                  ? 'border-brand-secondary/40 text-brand-secondary hover:border-brand-secondary hover:bg-brand-secondary/5'
+                  : isRLS
+                    ? 'border-rls-border text-rls-text-secondary hover:border-rls-accent hover:text-rls-accent'
+                    : 'border-faded-grey text-ditto-grey hover:border-brand-secondary hover:text-brand-secondary'"
             >
-              {{ expandedTrackId === track.trackId ? 'Close' : 'Splits' }}
+              {{ expandedTrackId === track.trackId ? 'Close' : (track.splits.length === 0 ? 'Add Split' : 'Splits') }}
             </button>
           </div>
         </div>
@@ -124,8 +124,9 @@
           <div class="flex-1">
               <ShareBarEnhanced
                 :confirmed-share="getConfirmedShare(track)"
-                :pending-count="getPendingCount(track)"
+                :pending-count="isRLS ? 0 : getPendingCount(track)"
                 :unclaimed-count="getUnclaimedCount(track)"
+                :is-r-l-s="isRLS"
               />
             </div>
             <div class="flex items-center gap-1 shrink-0">
@@ -141,21 +142,19 @@
                 </svg>
               </button>
               <button
-                v-if="track.splits.length === 0"
-                @click.stop="$emit('toggle', track.trackId)"
-                class="px-2.5 py-1 border border-brand-secondary/40 rounded-full text-[11px] font-medium text-brand-secondary font-satoshi"
-              >
-                Add
-              </button>
-              <button
-                v-else
                 @click.stop="$emit('toggle', track.trackId)"
                 class="px-2.5 py-1 border rounded-full text-[11px] font-medium font-satoshi"
                 :class="expandedTrackId === track.trackId 
-                  ? 'border-ditto-grey text-ditto-grey bg-white' 
-                  : 'border-faded-grey text-ditto-grey'"
+                  ? isRLS 
+                    ? 'border-rls-border text-rls-text-secondary bg-rls-bg-elevated' 
+                    : 'border-ditto-grey text-ditto-grey bg-white' 
+                  : track.splits.length === 0
+                    ? 'border-brand-secondary/40 text-brand-secondary'
+                    : isRLS
+                      ? 'border-rls-border text-rls-text-secondary'
+                      : 'border-faded-grey text-ditto-grey'"
               >
-                {{ expandedTrackId === track.trackId ? 'Close' : 'View' }}
+                {{ expandedTrackId === track.trackId ? 'Close' : (track.splits.length === 0 ? 'Add' : 'View') }}
               </button>
             </div>
           </div>
@@ -170,6 +169,7 @@
           :other-tracks="getOtherTracksWithSplits(track.trackId)"
           :has-changes="hasChangesForTrack(track.trackId)"
           :known-collaborators="knownCollaborators"
+          :is-r-l-s="isRLS"
           @close="$emit('toggle', track.trackId)"
           @save="$emit('save', track.trackId)"
           @add-split="(split) => $emit('add-split', track.trackId, split)"
@@ -195,6 +195,7 @@ const props = defineProps<{
   release: Release
   pendingChanges: Record<string, boolean>
   knownCollaborators?: { name: string; email: string }[]
+  isRLS?: boolean
 }>()
 
 defineEmits<{
@@ -233,7 +234,8 @@ const rowBgClass = (track: TrackSplit): string => {
   if (status === 'pending') return 'bg-amber-500/5'
   if (status === 'rejected') return 'bg-error/5'
   if (status === 'unclaimed') return 'bg-orange-500/5'
-  return 'bg-white'
+  // For RLS (dark theme), use transparent instead of white
+  return props.isRLS ? 'bg-transparent' : 'bg-white'
 }
 
 const rowHoverClass = (track: TrackSplit): string => {
@@ -242,7 +244,8 @@ const rowHoverClass = (track: TrackSplit): string => {
   if (status === 'pending') return 'hover:bg-amber-500/10'
   if (status === 'rejected') return 'hover:bg-error/10'
   if (status === 'unclaimed') return 'hover:bg-orange-500/10'
-  return 'hover:bg-lighter-grey'
+  // For RLS (dark theme), use a subtle dark hover instead of light grey
+  return props.isRLS ? 'hover:bg-white/5' : 'hover:bg-lighter-grey'
 }
 
 const getConfirmedShare = (track: TrackSplit): number => {

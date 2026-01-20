@@ -23,6 +23,20 @@ module.exports = {
         "error": "var(--error)",
         "warning": "var(--warning)",
         "info": "var(--info)",
+        // RLS (Label Services) Theme Colors
+        "rls-bg": "var(--rls-bg)",
+        "rls-bg-elevated": "var(--rls-bg-elevated)",
+        "rls-card": "var(--rls-card)",
+        "rls-text": "var(--rls-text)",
+        "rls-text-secondary": "var(--rls-text-secondary)",
+        "rls-text-muted": "var(--rls-text-muted)",
+        "rls-accent": "var(--rls-accent)",
+        "rls-highlight": "var(--rls-highlight)",
+        "rls-success": "var(--rls-success)",
+        "rls-error": "var(--rls-error)",
+        "rls-info": "var(--rls-info)",
+        "rls-border": "var(--rls-border)",
+        "rls-border-light": "var(--rls-border-light)",
         // Legacy Anima tokens
         "ditto-colors-light-dark-active-green":
           "var(--ditto-colors-light-dark-active-green)",

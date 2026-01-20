@@ -25,17 +25,26 @@
         </div>
         <div class="flex items-center gap-1.5">
           <div class="w-2.5 h-2.5 rounded-full bg-success" />
-          <span class="text-ditto-grey">Collaborators</span>
+          <span class="text-ditto-grey">{{ isRLS ? 'Active' : 'Collaborators' }}</span>
         </div>
+        <template v-if="!isRLS">
+          <div class="flex items-center gap-1.5">
+            <div class="w-2.5 h-2.5 rounded-full bg-amber-400" />
+            <span class="text-ditto-grey">Pending</span>
+          </div>
+        </template>
         <div class="flex items-center gap-1.5">
-          <div class="w-2.5 h-2.5 rounded-full bg-amber-400" />
-          <span class="text-ditto-grey">Pending</span>
-        </div>
-        <div class="flex items-center gap-1.5">
-          <div class="w-2.5 h-2.5 rounded-full bg-orange-500" />
+          <div class="w-2.5 h-2.5 rounded-full" :class="isRLS ? 'bg-warning' : 'bg-orange-500'" />
           <span class="text-ditto-grey">Unclaimed</span>
         </div>
       </div>
+    </div>
+
+    <!-- RLS Info Banner -->
+    <div v-if="isRLS" class="bg-rls-card rounded-xl p-4 border border-rls-border">
+      <p class="text-sm text-rls-text-secondary font-satoshi">
+        Manage royalty splits for your artists. Unclaimed shares are held until collaborators create their Ditto account to withdraw.
+      </p>
     </div>
 
     <!-- Release header with progress -->
@@ -51,19 +60,20 @@
     <!-- Empty state - no splits configured yet -->
     <div 
       v-if="tracksWithSplits.length === 0"
-      class="bg-white rounded-2xl border-2 border-dashed border-faded-grey p-8 text-center"
+      class="rounded-2xl border-2 border-dashed p-8 text-center"
+      :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'"
     >
-      <div class="w-12 h-12 rounded-full bg-ditto-purple/10 flex items-center justify-center mx-auto mb-4">
+      <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" :class="isRLS ? 'bg-rls-accent/10' : 'bg-ditto-purple/10'">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H6C4.93913 15 3.92172 15.4214 3.17157 16.1716C2.42143 16.9217 2 17.9391 2 19V21" stroke="#6C5CE7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="9" cy="7" r="4" stroke="#6C5CE7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M19 8V14M16 11H22" stroke="#6C5CE7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H6C4.93913 15 3.92172 15.4214 3.17157 16.1716C2.42143 16.9217 2 17.9391 2 19V21" :stroke="isRLS ? '#9e77ff' : '#6C5CE7'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="9" cy="7" r="4" :stroke="isRLS ? '#9e77ff' : '#6C5CE7'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M19 8V14M16 11H22" :stroke="isRLS ? '#9e77ff' : '#6C5CE7'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
-      <h3 class="text-base font-semibold text-ditto-blue font-satoshi mb-2">
+      <h3 class="text-base font-semibold font-satoshi mb-2" :class="isRLS ? 'text-rls-text' : 'text-ditto-blue'">
         No splits configured yet
       </h3>
-      <p class="text-sm text-ditto-grey font-satoshi mb-4 max-w-sm mx-auto">
+      <p class="text-sm font-satoshi mb-4 max-w-sm mx-auto" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">
         Add collaborators to share royalties from this release. Click "Add Split" on any track below to get started.
       </p>
     </div>
@@ -75,6 +85,7 @@
       :release="release"
       :pending-changes="pendingChanges"
       :known-collaborators="knownCollaborators"
+      :is-r-l-s="isRLS"
       @toggle="toggleTrack"
       @save="handleSave"
       @add-split="handleAddSplit"
@@ -104,6 +115,7 @@
     <FirstSplitModal
       v-if="showFirstSplitModal"
       :other-tracks-count="tracksWithoutSplits.length"
+      :is-r-l-s="isRLS"
       @close="showFirstSplitModal = false"
       @copy-to-all="handleCopyFromFirstSplit"
     />
@@ -165,6 +177,9 @@ const pendingChanges = reactive<Record<string, boolean>>({})
 const dirtyForms = reactive<Record<string, boolean>>({})
 const pendingSplits = reactive<Record<string, { name: string; email: string; share: number } | null>>({})
 const showFirstSplitModal = ref(false)
+
+// Check if RLS (Label Services) mode
+const isRLS = computed(() => props.userType === 'rls')
 const hasShownFirstSplitModal = ref(false)
 const lastSavedTrackId = ref<string | null>(null)
 const showUnsavedChangesModal = ref(false)
@@ -622,12 +637,24 @@ const handleSave = (trackId: string) => {
 const handleAddSplit = (trackId: string, split: { name: string; email: string; share: number }) => {
   const track = release.tracks.find(t => t.trackId === trackId)
   if (track) {
+    // For RLS: check if collaborator has a Ditto account (simulated via knownCollaborators)
+    // Active if they have an account, unclaimed if they don't
+    // For subscription: always pending until they confirm
+    let status: 'pending' | 'active' | 'unclaimed' = 'pending'
+    if (isRLS.value) {
+      const hasAccount = knownCollaborators.some(
+        c => c.email.toLowerCase() === split.email.toLowerCase()
+      )
+      status = hasAccount ? 'active' : 'unclaimed'
+    }
+    
     track.splits.push({
       id: `s${Date.now()}`,
       name: split.name,
       email: split.email,
       share: split.share,
-      status: 'pending'
+      status,
+      activeSince: status === 'active' ? new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : undefined
     })
     // Recalculate user share (rejected splits don't reduce user share)
     track.userShare = Math.max(0, 100 - track.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
@@ -655,13 +682,14 @@ const handleUpdateShare = (trackId: string, splitId: string, newShare: number) =
   const split = track?.splits.find(s => s.id === splitId)
   if (track && split) {
     const oldShare = split.share
-    // Store original share if this was an active split (for showing pending change indicator)
-    if (split.status === 'active' && split.originalShare === undefined) {
+    // For subscription mode: Store original share if this was an active split (for showing pending change indicator)
+    if (!isRLS.value && split.status === 'active' && split.originalShare === undefined) {
       split.originalShare = oldShare
     }
     split.share = newShare
     // When editing an active or rejected split, it becomes pending again (needs re-confirmation)
-    if (split.status === 'active' || split.status === 'rejected') {
+    // For RLS: no pending status, keep as active or unclaimed
+    if (!isRLS.value && (split.status === 'active' || split.status === 'rejected')) {
       split.status = 'pending'
     }
     // Recalculate user share (rejected splits don't reduce user share)
