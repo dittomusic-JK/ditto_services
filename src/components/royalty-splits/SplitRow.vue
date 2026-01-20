@@ -107,8 +107,8 @@
 
       <!-- Status indicator with tooltip -->
       <div v-if="status && !isEditable && !isEditingShare" class="flex flex-col items-center w-[85px] relative group">
-        <!-- Show pending change indicator if originalShare differs -->
-        <template v-if="hasPendingChange">
+        <!-- Show pending change indicator if originalShare differs (not for RLS) -->
+        <template v-if="hasPendingChange && !isRLS">
           <div class="flex items-center gap-1 mb-1">
             <span class="text-xs font-medium text-success font-satoshi">{{ originalShare }}%</span>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="text-ditto-grey">
@@ -126,34 +126,34 @@
             class="w-2.5 h-2.5 rounded-full mb-1"
             :class="statusDotClass"
           />
-          <span class="text-xs font-satoshi text-center leading-tight cursor-help" :class="status === 'rejected' ? 'text-error' : 'text-ditto-grey'">
-            {{ statusText }}
+          <span class="text-xs font-satoshi text-center leading-tight cursor-help" :class="status === 'rejected' ? 'text-error' : isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">
+            {{ displayStatusText }}
           </span>
         </template>
         <!-- Tooltip -->
-        <div v-if="statusTooltip" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-ditto-blue text-white text-[10px] rounded-lg w-48 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+        <div v-if="statusTooltip" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-white text-[10px] rounded-lg w-48 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg" :class="isRLS ? 'bg-rls-bg-elevated border border-rls-border' : 'bg-ditto-blue'">
           {{ statusTooltip }}
-          <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ditto-blue" />
+          <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" :class="isRLS ? 'border-t-rls-bg-elevated' : 'border-t-ditto-blue'" />
         </div>
       </div>
 
       <!-- Action buttons -->
       <div class="flex items-center gap-1">
         <!-- Edit share icon (for active or rejected splits) -->
-        <div v-if="!isEditable && !isEditingShare && (status === 'active' || status === 'rejected')" class="relative group">
+        <div v-if="!isEditable && !isEditingShare && (status === 'active' || status === 'rejected' || (isRLS && status === 'unclaimed'))" class="relative group">
           <button
             @click="startShareEdit"
-            class="p-1.5 text-ditto-grey hover:text-brand-secondary transition-colors"
+            class="p-1.5 transition-colors" :class="isRLS ? 'text-rls-text-secondary hover:text-rls-accent' : 'text-ditto-grey hover:text-brand-secondary'"
           >
             <EditIcon />
           </button>
-          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-ditto-blue text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" :class="isRLS ? 'bg-rls-bg-elevated border border-rls-border' : 'bg-ditto-blue'">
             {{ status === 'rejected' ? 'Edit & resend offer' : 'Edit share' }}
           </div>
         </div>
 
-        <!-- Resend confirmation (for pending splits) -->
-        <div v-if="!isEditable && status === 'pending'" class="relative group">
+        <!-- Resend confirmation (for pending splits - not shown for RLS) -->
+        <div v-if="!isEditable && status === 'pending' && !isRLS" class="relative group">
           <button
             @click="$emit('resend')"
             class="p-1.5 text-ditto-grey hover:text-brand-secondary transition-colors"
@@ -173,7 +173,7 @@
           >
             <TrashIcon />
           </button>
-          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-ditto-blue text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" :class="isRLS ? 'bg-rls-bg-elevated border border-rls-border' : 'bg-ditto-blue'">
             Remove split
           </div>
         </div>
@@ -439,11 +439,15 @@ const shareLabel = computed(() => {
 })
 
 const statusDotClass = computed(() => {
+  // For RLS, pending should show as active (green)
+  if (props.isRLS && props.status === 'pending') {
+    return 'bg-success'
+  }
   switch (props.status) {
     case 'active': return 'bg-success'
     case 'pending': return 'bg-amber-500'
     case 'rejected': return 'bg-error'
-    case 'unclaimed': return 'bg-orange-500'
+    case 'unclaimed': return props.isRLS ? 'bg-warning' : 'bg-orange-500'
     default: return 'bg-ditto-grey'
   }
 })
@@ -477,6 +481,14 @@ const statusText = computed(() => {
     default:
       return ''
   }
+})
+
+// For RLS, don't show "Pending" - show "Active" instead (immediate splits)
+const displayStatusText = computed(() => {
+  if (props.isRLS && props.status === 'pending') {
+    return 'Active'
+  }
+  return statusText.value
 })
 
 // Mobile shows full date inline since there's more room
