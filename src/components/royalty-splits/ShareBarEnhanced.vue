@@ -55,6 +55,26 @@
         <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ditto-blue" />
       </div>
     </div>
+    
+    <!-- Unclaimed badge (needs to create DTO account) -->
+    <div 
+      v-if="unclaimedCount && unclaimedCount > 0" 
+      class="relative group"
+    >
+      <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[10px] font-medium font-satoshi cursor-help">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M5 3V5.5M5 7V7.01" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+        </svg>
+        {{ unclaimedCount }}
+      </span>
+      
+      <!-- Tooltip -->
+      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-ditto-blue text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+        {{ unclaimedCount }} collaborator{{ unclaimedCount > 1 ? 's need' : ' needs' }} to create a Ditto account
+        <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ditto-blue" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -64,6 +84,7 @@ import { computed } from 'vue'
 const props = defineProps<{
   confirmedShare: number
   pendingCount: number
+  unclaimedCount?: number
 }>()
 
 // Actual user share = what's left after confirmed splits

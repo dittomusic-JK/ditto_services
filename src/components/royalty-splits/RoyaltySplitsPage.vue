@@ -5,7 +5,7 @@
       <div>
         <button 
           class="flex items-center gap-1 text-sm text-ditto-grey font-satoshi hover:text-ditto-blue transition-colors mb-2"
-          @click="$emit('back')"
+          @click="handleBackClick"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -30,6 +30,10 @@
         <div class="flex items-center gap-1.5">
           <div class="w-2.5 h-2.5 rounded-full bg-amber-400" />
           <span class="text-ditto-grey">Pending</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <div class="w-2.5 h-2.5 rounded-full bg-orange-500" />
+          <span class="text-ditto-grey">Unclaimed</span>
         </div>
       </div>
     </div>
@@ -77,17 +81,21 @@
       @remove-split="handleRemoveSplit"
       @update-share="handleUpdateShare"
       @resend-confirmation="handleResendConfirmation"
-      @copy-from="handleCopyFrom"
+      @open-copy-modal="openCopyFromModal"
       @copy-to="openCopyToModal"
+      @dirty-change="handleDirtyChange"
     />
 
-    <!-- Copy Splits Modal -->
+    <!-- Copy Splits Modal (unified with source selection) -->
     <CopySplitsModal
       v-if="copyModal.show"
+      :mode="copyModal.mode"
+      :source-tracks="tracksWithSplits"
       :source-track-name="copyModal.sourceTrackName"
       :source-user-share="copyModal.sourceUserShare"
       :source-splits="copyModal.sourceSplits"
       :target-tracks="copyModal.targetTracks"
+      :current-track-id="copyModal.currentTrackId"
       @close="copyModal.show = false"
       @confirm="handleCopyConfirm"
     />
@@ -98,6 +106,25 @@
       :other-tracks-count="tracksWithoutSplits.length"
       @close="showFirstSplitModal = false"
       @copy-to-all="handleCopyFromFirstSplit"
+    />
+
+    <!-- Edit Email Modal -->
+    <EditEmailModal
+      v-if="editEmailModal.show"
+      :collaborator-name="editEmailModal.collaboratorName"
+      :collaborator-email="editEmailModal.collaboratorEmail"
+      :current-email="editEmailModal.currentEmail"
+      :tracks-with-collaborator="editEmailModal.tracksWithCollaborator"
+      @close="editEmailModal.show = false"
+      @confirm="handleEditEmailConfirm"
+    />
+
+    <!-- Unsaved Changes Modal -->
+    <UnsavedChangesModal
+      v-if="showUnsavedChangesModal"
+      @save="handleSaveAllAndLeave"
+      @discard="handleDiscardAndLeave"
+      @cancel="handleCancelUnsavedChanges"
     />
 
     <!-- Toast notification -->
@@ -111,12 +138,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import type { UserType, Release, TrackSplit, Collaborator } from '../../types'
 import ReleaseHeader from './ReleaseHeader.vue'
 import TrackGroup from './TrackGroup.vue'
 import CopySplitsModal from './CopySplitsModal.vue'
 import FirstSplitModal from './FirstSplitModal.vue'
+import EditEmailModal from './EditEmailModal.vue'
+import UnsavedChangesModal from './UnsavedChangesModal.vue'
 import Toast from '../ui/Toast.vue'
 
 const props = withDefaults(defineProps<{
@@ -127,15 +156,42 @@ const props = withDefaults(defineProps<{
   demo: 'populated'
 })
 
-defineEmits<{
+const emit = defineEmits<{
   back: []
 }>()
 
 const expandedTrackId = ref<string | null>(null)
 const pendingChanges = reactive<Record<string, boolean>>({})
+const dirtyForms = reactive<Record<string, boolean>>({})
+const pendingSplits = reactive<Record<string, { name: string; email: string; share: number } | null>>({})
 const showFirstSplitModal = ref(false)
 const hasShownFirstSplitModal = ref(false)
 const lastSavedTrackId = ref<string | null>(null)
+const showUnsavedChangesModal = ref(false)
+const pendingTrackSwitch = ref<string | null>(null)
+
+// Computed: check if there are any unsaved changes (saved splits or form data being typed)
+const hasUnsavedChanges = computed(() => 
+  Object.values(pendingChanges).some(hasChanges => hasChanges) ||
+  Object.values(dirtyForms).some(isDirty => isDirty)
+)
+
+// Browser beforeunload handler
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (hasUnsavedChanges.value) {
+    e.preventDefault()
+    e.returnValue = ''
+    return ''
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
 
 // Toast state
 const toast = reactive<{
@@ -177,18 +233,37 @@ const knownCollaborators = [
 // Copy modal state
 const copyModal = reactive<{
   show: boolean
+  mode: 'select-source' | 'copy-to'
   sourceTrackId: string
   sourceTrackName: string
   sourceUserShare: number
   sourceSplits: Collaborator[]
   targetTracks: TrackSplit[]
+  currentTrackId?: string
 }>({
   show: false,
+  mode: 'select-source',
   sourceTrackId: '',
   sourceTrackName: '',
   sourceUserShare: 100,
   sourceSplits: [],
-  targetTracks: []
+  targetTracks: [],
+  currentTrackId: undefined
+})
+
+// Edit email modal state
+const editEmailModal = reactive<{
+  show: boolean
+  collaboratorName: string
+  collaboratorEmail: string
+  currentEmail: string
+  tracksWithCollaborator: TrackSplit[]
+}>({
+  show: false,
+  collaboratorName: '',
+  collaboratorEmail: '',
+  currentEmail: '',
+  tracksWithCollaborator: []
 })
 
 // Empty release data
@@ -308,7 +383,7 @@ const populatedRelease: Release = {
       ],
       userShare: 65
     },
-    // Track 6: Multiple pending splits (new collaborators)
+    // Track 6: Unclaimed split (collaborator needs to create Ditto account)
     {
       trackId: 't6',
       trackNumber: 6,
@@ -319,7 +394,7 @@ const populatedRelease: Release = {
           name: 'Bob Johnson',
           email: 'bob@example.com',
           share: 25,
-          status: 'pending'
+          status: 'unclaimed'
         },
         {
           id: 's8',
@@ -502,7 +577,21 @@ const sortedTracks = computed(() =>
 
 // Handlers
 const toggleTrack = (trackId: string) => {
-  expandedTrackId.value = expandedTrackId.value === trackId ? null : trackId
+  // If collapsing the current track, no unsaved check needed
+  if (expandedTrackId.value === trackId) {
+    expandedTrackId.value = null
+    return
+  }
+  
+  // If expanding a different track while current one has unsaved changes or dirty form, show modal
+  if (expandedTrackId.value && (pendingChanges[expandedTrackId.value] || dirtyForms[expandedTrackId.value])) {
+    pendingTrackSwitch.value = trackId
+    showUnsavedChangesModal.value = true
+    return
+  }
+  
+  // No unsaved changes, switch directly
+  expandedTrackId.value = trackId
 }
 
 const getOtherTracksWithSplits = (currentTrackId: string): TrackSplit[] => {
@@ -566,6 +655,10 @@ const handleUpdateShare = (trackId: string, splitId: string, newShare: number) =
   const split = track?.splits.find(s => s.id === splitId)
   if (track && split) {
     const oldShare = split.share
+    // Store original share if this was an active split (for showing pending change indicator)
+    if (split.status === 'active' && split.originalShare === undefined) {
+      split.originalShare = oldShare
+    }
     split.share = newShare
     // When editing an active or rejected split, it becomes pending again (needs re-confirmation)
     if (split.status === 'active' || split.status === 'rejected') {
@@ -586,37 +679,37 @@ const handleResendConfirmation = (trackId: string, splitId: string) => {
   }
 }
 
-const handleCopyFrom = (targetTrackId: string, sourceTrackId: string) => {
-  const sourceTrack = release.tracks.find(t => t.trackId === sourceTrackId)
-  const targetTrack = release.tracks.find(t => t.trackId === targetTrackId)
-  
-  if (sourceTrack && targetTrack) {
-    // Check for conflicts - show modal if target has existing splits
-    if (targetTrack.splits.length > 0) {
-      copyModal.sourceTrackId = sourceTrackId
-      copyModal.sourceTrackName = sourceTrack.trackName
-      copyModal.sourceUserShare = sourceTrack.userShare
-      copyModal.sourceSplits = sourceTrack.splits
-      copyModal.targetTracks = [targetTrack]
-      copyModal.show = true
-    } else {
-      // No conflicts, copy directly (replace mode)
-      applyCopyToTracks(sourceTrack, [targetTrack])
-      showToast('Splits copied successfully')
-    }
-  }
+// Track when form has unsaved data being typed
+const handleDirtyChange = (trackId: string, isDirty: boolean, pendingSplit: { name: string; email: string; share: number } | null) => {
+  dirtyForms[trackId] = isDirty
+  pendingSplits[trackId] = pendingSplit
+}
+
+// Open copy from modal (unified flow with source selection inside modal)
+const openCopyFromModal = (currentTrackId: string) => {
+  copyModal.mode = 'select-source'
+  copyModal.currentTrackId = currentTrackId
+  copyModal.targetTracks = release.tracks
+  copyModal.sourceTrackId = ''
+  copyModal.sourceTrackName = ''
+  copyModal.sourceUserShare = 100
+  copyModal.sourceSplits = []
+  copyModal.show = true
 }
 
 // Open copy to specific tracks modal
+// Open copy to specific tracks modal (pre-selected source)
 const openCopyToModal = (sourceTrackId: string) => {
   const sourceTrack = release.tracks.find(t => t.trackId === sourceTrackId)
   if (sourceTrack) {
     const otherTracks = release.tracks.filter(t => t.trackId !== sourceTrackId)
+    copyModal.mode = 'copy-to'
     copyModal.sourceTrackId = sourceTrackId
     copyModal.sourceTrackName = sourceTrack.trackName
     copyModal.sourceUserShare = sourceTrack.userShare
     copyModal.sourceSplits = sourceTrack.splits
     copyModal.targetTracks = otherTracks
+    copyModal.currentTrackId = undefined
     copyModal.show = true
   }
 }
@@ -643,8 +736,10 @@ const handleCopyFromFirstSplit = () => {
 }
 
 // Handle copy confirmation from modal
-const handleCopyConfirm = (_mode: 'replace', selectedTrackIds: string[]) => {
-  const sourceTrack = release.tracks.find(t => t.trackId === copyModal.sourceTrackId)
+const handleCopyConfirm = (_mode: 'replace', selectedTrackIds: string[], sourceTrackId?: string) => {
+  // Use sourceTrackId from modal if provided (select-source mode), otherwise use stored one
+  const effectiveSourceId = sourceTrackId || copyModal.sourceTrackId
+  const sourceTrack = release.tracks.find(t => t.trackId === effectiveSourceId)
   if (sourceTrack) {
     const selectedTracks = release.tracks.filter(t => selectedTrackIds.includes(t.trackId))
     applyCopyToTracks(sourceTrack, selectedTracks)
@@ -671,5 +766,120 @@ const applyCopyToTracks = (sourceTrack: TrackSplit, targetTracks: TrackSplit[]) 
       pendingChanges[track.trackId] = true
     }
   })
+}
+
+// Open edit email modal for a collaborator
+const openEditEmailModal = (collaboratorEmail: string) => {
+  // Find all tracks with this collaborator
+  const tracksWithCollaborator = release.tracks.filter(t => 
+    t.splits.some(s => s.email.toLowerCase() === collaboratorEmail.toLowerCase())
+  )
+  
+  // Get collaborator name from first track
+  const firstSplit = tracksWithCollaborator[0]?.splits.find(
+    s => s.email.toLowerCase() === collaboratorEmail.toLowerCase()
+  )
+  
+  if (firstSplit && tracksWithCollaborator.length > 0) {
+    editEmailModal.collaboratorName = firstSplit.name
+    editEmailModal.collaboratorEmail = firstSplit.email
+    editEmailModal.currentEmail = firstSplit.email
+    editEmailModal.tracksWithCollaborator = tracksWithCollaborator
+    editEmailModal.show = true
+  }
+}
+
+// Handle edit email confirmation
+const handleEditEmailConfirm = (newEmail: string, selectedTrackIds: string[]) => {
+  const oldEmail = editEmailModal.currentEmail.toLowerCase()
+  let updatedCount = 0
+  
+  selectedTrackIds.forEach(trackId => {
+    const track = release.tracks.find(t => t.trackId === trackId)
+    if (track) {
+      const split = track.splits.find(s => s.email.toLowerCase() === oldEmail)
+      if (split) {
+        split.email = newEmail
+        // Mark as pending since email changed
+        if (split.status === 'active') {
+          split.status = 'pending'
+        }
+        pendingChanges[trackId] = true
+        updatedCount++
+      }
+    }
+  })
+  
+  editEmailModal.show = false
+  showToast(`Email updated on ${updatedCount} track${updatedCount !== 1 ? 's' : ''}`)
+}
+
+// Handle back button click - check for unsaved changes
+const handleBackClick = () => {
+  if (hasUnsavedChanges.value) {
+    showUnsavedChangesModal.value = true
+  } else {
+    emit('back')
+  }
+}
+
+// Save all changes and then leave (or switch tracks)
+const handleSaveAllAndLeave = () => {
+  // First, add any pending splits that were being typed
+  Object.keys(pendingSplits).forEach(trackId => {
+    const split = pendingSplits[trackId]
+    if (split) {
+      handleAddSplit(trackId, split)
+      pendingSplits[trackId] = null
+    }
+  })
+  
+  // Save all tracks with pending changes
+  Object.keys(pendingChanges).forEach(trackId => {
+    if (pendingChanges[trackId]) {
+      pendingChanges[trackId] = false
+    }
+  })
+  // Clear dirty form states
+  Object.keys(dirtyForms).forEach(trackId => {
+    dirtyForms[trackId] = false
+  })
+  showUnsavedChangesModal.value = false
+  showToast('All changes saved')
+  
+  // If we were switching tracks, do that now
+  if (pendingTrackSwitch.value) {
+    expandedTrackId.value = pendingTrackSwitch.value
+    pendingTrackSwitch.value = null
+  } else {
+    emit('back')
+  }
+}
+
+// Discard all changes and leave (or switch tracks)
+const handleDiscardAndLeave = () => {
+  // Clear all pending changes
+  Object.keys(pendingChanges).forEach(trackId => {
+    pendingChanges[trackId] = false
+  })
+  // Clear dirty form states
+  Object.keys(dirtyForms).forEach(trackId => {
+    dirtyForms[trackId] = false
+  })
+  showUnsavedChangesModal.value = false
+  
+  // If we were switching tracks, do that now
+  if (pendingTrackSwitch.value) {
+    expandedTrackId.value = pendingTrackSwitch.value
+    pendingTrackSwitch.value = null
+  } else {
+    emit('back')
+  }
+}
+
+// Cancel unsaved changes modal (stay on current track)
+const handleCancelUnsavedChanges = () => {
+  showUnsavedChangesModal.value = false
+  pendingTrackSwitch.value = null
 }
 </script>

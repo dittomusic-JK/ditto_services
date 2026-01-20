@@ -1,6 +1,6 @@
 <template>
   <!-- Desktop layout -->
-  <div class="hidden sm:grid grid-cols-[1fr_1fr_auto] gap-4 items-start py-3">
+  <div class="hidden sm:grid grid-cols-[1fr_1fr_220px] gap-4 items-start py-3">
     <!-- Name field with autocomplete -->
     <div class="relative">
       <label class="block text-xs text-ditto-grey mb-1 font-satoshi">Name:</label>
@@ -58,7 +58,7 @@
     <div class="flex items-start gap-3">
       <!-- Share input -->
       <div class="text-right">
-        <label class="block text-xs text-ditto-grey mb-1 font-satoshi">
+        <label class="block text-xs text-ditto-grey mb-1 font-satoshi whitespace-nowrap">
           {{ shareLabel }}
         </label>
         <div class="flex items-center gap-1">
@@ -73,8 +73,7 @@
             class="w-12 text-sm font-satoshi text-right border-b pb-1 focus:outline-none bg-transparent"
             :class="shareExceeds100 ? 'text-error border-error' : 'text-ditto-blue border-faded-grey focus:border-brand-secondary'"
             @input="isEditable ? emitUpdate() : null"
-            @keydown.enter="isEditable ? handleShareComplete() : saveShareEdit()"
-            @keydown.tab="isEditable ? handleShareComplete() : null"
+            @keydown.enter="isEditingShare ? saveShareEdit() : null"
             @keydown.escape="cancelShareEdit"
           />
           <span v-else class="text-sm font-satoshi" :class="status === 'rejected' ? 'text-error line-through' : 'text-ditto-blue'">{{ share }}</span>
@@ -102,14 +101,30 @@
       </div>
 
       <!-- Status indicator with tooltip -->
-      <div v-if="status && !isEditable && !isEditingShare" class="flex flex-col items-center min-w-[80px] relative group">
-        <div
-          class="w-2.5 h-2.5 rounded-full mb-1"
-          :class="statusDotClass"
-        />
-        <span class="text-xs font-satoshi text-center leading-tight cursor-help" :class="status === 'rejected' ? 'text-error' : 'text-ditto-grey'">
-          {{ statusText }}
-        </span>
+      <div v-if="status && !isEditable && !isEditingShare" class="flex flex-col items-center w-[85px] relative group">
+        <!-- Show pending change indicator if originalShare differs -->
+        <template v-if="hasPendingChange">
+          <div class="flex items-center gap-1 mb-1">
+            <span class="text-xs font-medium text-success font-satoshi">{{ originalShare }}%</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="text-ditto-grey">
+              <path d="M4 6H8M8 6L6 4M8 6L6 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="text-xs font-medium text-amber-500 font-satoshi">{{ share }}%</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-2 h-2 rounded-full bg-amber-500" />
+            <span class="text-[10px] text-amber-600 font-satoshi">Pending</span>
+          </div>
+        </template>
+        <template v-else>
+          <div
+            class="w-2.5 h-2.5 rounded-full mb-1"
+            :class="statusDotClass"
+          />
+          <span class="text-xs font-satoshi text-center leading-tight cursor-help" :class="status === 'rejected' ? 'text-error' : 'text-ditto-grey'">
+            {{ statusText }}
+          </span>
+        </template>
         <!-- Tooltip -->
         <div v-if="statusTooltip" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-ditto-blue text-white text-[10px] rounded-lg w-48 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
           {{ statusTooltip }}
@@ -208,8 +223,6 @@
             class="w-10 text-sm font-satoshi text-right border-b pb-1 focus:outline-none bg-transparent"
             :class="shareExceeds100 ? 'text-error border-error' : 'text-ditto-blue border-faded-grey focus:border-brand-secondary'"
             @input="emitUpdate"
-            @keydown.enter="handleShareComplete"
-            @keydown.tab="handleShareComplete"
           />
           <span v-else class="text-sm text-ditto-blue font-satoshi">{{ share }}</span>
           <span class="text-sm font-satoshi" :class="shareExceeds100 ? 'text-error' : 'text-ditto-grey'">%</span>
@@ -306,6 +319,7 @@ const props = withDefaults(defineProps<{
   canEditEmail?: boolean
   knownCollaborators?: KnownCollaborator[]
   currentTotalShare?: number // Total share already allocated (excluding this row)
+  originalShare?: number // The share value before editing (for showing pending changes)
 }>(), {
   isEditable: false,
   canEditEmail: false,
@@ -318,7 +332,6 @@ const emit = defineEmits<{
   remove: []
   'edit-share': []
   'update-share': [newShare: number]
-  complete: []
   resend: []
 }>()
 
@@ -338,6 +351,13 @@ watch(() => props.share, (val) => { localShare.value = val })
 // Inline validation: check if share exceeds 100%
 const shareExceeds100 = computed(() => {
   return props.currentTotalShare + (localShare.value || 0) > 100
+})
+
+// Check if there's a pending change (originalShare differs from current share)
+const hasPendingChange = computed(() => {
+  return props.originalShare !== undefined && 
+         props.originalShare !== props.share &&
+         props.status === 'pending'
 })
 
 // Filter collaborators based on input
@@ -401,19 +421,6 @@ const cancelShareEdit = () => {
   isEditingShare.value = false
 }
 
-// Check if row is complete (valid for adding)
-const isRowComplete = computed(() => {
-  return localName.value.trim() !== '' && 
-         localEmail.value.trim() !== '' && 
-         localShare.value > 0 &&
-         !shareExceeds100.value
-})
-
-const handleShareComplete = () => {
-  if (props.isEditable && isRowComplete.value) {
-    emit('complete')
-  }
-}
 
 const shareLabel = computed(() => {
   if (props.shareIndex !== undefined) {
@@ -427,6 +434,7 @@ const statusDotClass = computed(() => {
     case 'active': return 'bg-success'
     case 'pending': return 'bg-amber-500'
     case 'rejected': return 'bg-error'
+    case 'unclaimed': return 'bg-orange-500'
     default: return 'bg-ditto-grey'
   }
 })
@@ -455,6 +463,8 @@ const statusText = computed(() => {
       return 'Pending'
     case 'rejected':
       return 'Rejected'
+    case 'unclaimed':
+      return 'Unclaimed'
     default:
       return ''
   }
@@ -476,6 +486,8 @@ const statusTooltip = computed(() => {
       return "The collaborator hasn't accepted their share via email yet."
     case 'rejected':
       return 'The collaborator declined this split offer. Edit to send a new offer.'
+    case 'unclaimed':
+      return 'This collaborator needs to log in or create a Ditto account to claim their share.'
     default:
       return ''
   }

@@ -52,6 +52,7 @@
             <ShareBarEnhanced
               :confirmed-share="getConfirmedShare(track)"
               :pending-count="getPendingCount(track)"
+              :unclaimed-count="getUnclaimedCount(track)"
             />
           </div>
 
@@ -120,10 +121,11 @@
 
           <!-- Bottom row: share bar and action -->
           <div class="flex items-center gap-2 pl-8">
-            <div class="flex-1">
+          <div class="flex-1">
               <ShareBarEnhanced
                 :confirmed-share="getConfirmedShare(track)"
                 :pending-count="getPendingCount(track)"
+                :unclaimed-count="getUnclaimedCount(track)"
               />
             </div>
             <div class="flex items-center gap-1 shrink-0">
@@ -166,7 +168,7 @@
           :user-share="track.userShare"
           :existing-splits="track.splits"
           :other-tracks="getOtherTracksWithSplits(track.trackId)"
-          :has-changes="pendingChanges[track.trackId]"
+          :has-changes="hasChangesForTrack(track.trackId)"
           :known-collaborators="knownCollaborators"
           @close="$emit('toggle', track.trackId)"
           @save="$emit('save', track.trackId)"
@@ -174,7 +176,8 @@
           @remove-split="(id) => $emit('remove-split', track.trackId, id)"
           @update-share="(id, newShare) => $emit('update-share', track.trackId, id, newShare)"
           @resend-confirmation="(id) => $emit('resend-confirmation', track.trackId, id)"
-          @copy-from="(sourceId) => $emit('copy-from', track.trackId, sourceId)"
+          @open-copy-modal="$emit('open-copy-modal', track.trackId)"
+          @dirty-change="(isDirty, pendingSplit) => $emit('dirty-change', track.trackId, isDirty, pendingSplit)"
         />
       </div>
     </div>
@@ -201,20 +204,23 @@ defineEmits<{
   'remove-split': [trackId: string, splitId: string]
   'update-share': [trackId: string, splitId: string, newShare: number]
   'resend-confirmation': [trackId: string, splitId: string]
-  'copy-from': [trackId: string, sourceTrackId: string]
+  'open-copy-modal': [trackId: string]
   'copy-to': [trackId: string]
+  'dirty-change': [trackId: string, isDirty: boolean, pendingSplit: { name: string; email: string; share: number } | null]
 }>()
 
 const getOtherTracksWithSplits = (currentTrackId: string): TrackSplit[] => {
   return props.release.tracks.filter(t => t.trackId !== currentTrackId && t.splits.length > 0)
 }
 
-const rowStatus = (track: TrackSplit): 'none' | 'confirmed' | 'pending' | 'rejected' => {
+const rowStatus = (track: TrackSplit): 'none' | 'confirmed' | 'pending' | 'rejected' | 'unclaimed' => {
   if (track.splits.length === 0) return 'none'
   const hasActive = track.splits.some(s => s.status === 'active')
   const hasPending = track.splits.some(s => s.status === 'pending')
   const hasRejected = track.splits.some(s => s.status === 'rejected')
+  const hasUnclaimed = track.splits.some(s => s.status === 'unclaimed')
   
+  if (hasUnclaimed) return 'unclaimed' // Any unclaimed = unclaimed state (needs attention)
   if (hasPending) return 'pending' // Any pending = pending state
   if (hasRejected && !hasActive) return 'rejected' // Only rejected, no active = rejected state
   if (hasActive) return 'confirmed' // All remaining active = confirmed
@@ -226,6 +232,7 @@ const rowBgClass = (track: TrackSplit): string => {
   if (status === 'confirmed') return 'bg-success/5'
   if (status === 'pending') return 'bg-amber-500/5'
   if (status === 'rejected') return 'bg-error/5'
+  if (status === 'unclaimed') return 'bg-orange-500/5'
   return 'bg-white'
 }
 
@@ -234,6 +241,7 @@ const rowHoverClass = (track: TrackSplit): string => {
   if (status === 'confirmed') return 'hover:bg-success/10'
   if (status === 'pending') return 'hover:bg-amber-500/10'
   if (status === 'rejected') return 'hover:bg-error/10'
+  if (status === 'unclaimed') return 'hover:bg-orange-500/10'
   return 'hover:bg-lighter-grey'
 }
 
@@ -247,7 +255,15 @@ const getPendingCount = (track: TrackSplit): number => {
   return track.splits.filter(s => s.status === 'pending').length
 }
 
+const getUnclaimedCount = (track: TrackSplit): number => {
+  return track.splits.filter(s => s.status === 'unclaimed').length
+}
+
 const getRejectedCount = (track: TrackSplit): number => {
   return track.splits.filter(s => s.status === 'rejected').length
+}
+
+const hasChangesForTrack = (trackId: string): boolean => {
+  return props.pendingChanges[trackId] === true
 }
 </script>

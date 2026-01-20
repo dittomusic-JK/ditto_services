@@ -9,7 +9,7 @@ export interface LabelOption {
 
 // Royalty Splits Types
 export type UserType = 'subscription' | 'rls'
-export type SplitStatus = 'active' | 'pending' | 'rejected'
+export type SplitStatus = 'active' | 'pending' | 'rejected' | 'unclaimed'
 
 export interface Collaborator {
   id: string
@@ -18,6 +18,7 @@ export interface Collaborator {
   share: number
   status: SplitStatus
   activeSince?: string
+  originalShare?: number // The share value before editing (for showing pending changes)
 }
 
 export interface TrackSplit {
