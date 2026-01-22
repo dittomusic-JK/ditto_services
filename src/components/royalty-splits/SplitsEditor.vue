@@ -87,7 +87,7 @@
       
       <!-- Keyboard shortcut hint -->
       <p class="text-xs font-satoshi mt-3 hidden sm:block text-center" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">
-        <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">⌘</kbd> + <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">Enter</kbd> to save · <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">Esc</kbd> to close
+        <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">{{ modifierKey }}</kbd> + <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">Enter</kbd> to save · <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">Esc</kbd> to close
       </p>
     </div>
 
@@ -168,6 +168,12 @@ const emit = defineEmits<{
 
 const containerRef = ref<HTMLDivElement | null>(null)
 const newSplitRowRef = ref<InstanceType<typeof SplitRow> | null>(null)
+
+// Detect Mac vs Windows for keyboard shortcut display
+const isMac = computed(() => 
+  typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform)
+)
+const modifierKey = computed(() => isMac.value ? '⌘' : 'Ctrl')
 
 // Focus container on mount so keyboard shortcuts work
 onMounted(() => {
