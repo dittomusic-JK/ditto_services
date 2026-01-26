@@ -327,6 +327,7 @@ const populatedRelease: Release = {
           email: 'rema@mavin.com',
           share: 25,
           status: 'active',
+          hasAccount: true,
           activeSince: '17th April 2025'
         }
       ],
@@ -357,7 +358,7 @@ const populatedRelease: Release = {
       ],
       userShare: 65
     },
-    // Track 4: Single pending split
+    // Track 4: Single pending split (collaborator has account, just needs to approve)
     {
       trackId: 't4',
       trackNumber: 4,
@@ -368,12 +369,13 @@ const populatedRelease: Release = {
           name: 'Ayra Starr',
           email: 'ayra@mavin.com',
           share: 30,
-          status: 'pending'
+          status: 'pending',
+          hasAccount: true
         }
       ],
       userShare: 70
     },
-    // Track 5: Mixed - some confirmed, some pending
+    // Track 5: Mixed - some confirmed, some pending (one unregistered)
     {
       trackId: 't5',
       trackNumber: 5,
@@ -385,6 +387,7 @@ const populatedRelease: Release = {
           email: 'geri101@gmail.com',
           share: 20,
           status: 'active',
+          hasAccount: true,
           activeSince: '5th May 2025'
         },
         {
@@ -392,12 +395,13 @@ const populatedRelease: Release = {
           name: 'New Collaborator',
           email: 'newcollab@email.com',
           share: 15,
-          status: 'pending'
+          status: 'pending',
+          hasAccount: false // Not registered yet - will show indicator
         }
       ],
       userShare: 65
     },
-    // Track 6: Unclaimed split (collaborator needs to create Ditto account)
+    // Track 6: Mixed with unregistered collaborators
     {
       trackId: 't6',
       trackNumber: 6,
@@ -408,14 +412,16 @@ const populatedRelease: Release = {
           name: 'Bob Johnson',
           email: 'bob@example.com',
           share: 25,
-          status: 'unclaimed'
+          status: 'pending',
+          hasAccount: false // Not registered - will show indicator
         },
         {
           id: 's8',
           name: 'Sarah Chen',
           email: 'sarah.chen@music.co',
           share: 25,
-          status: 'pending'
+          status: 'pending',
+          hasAccount: false // Not registered - will show indicator
         }
       ],
       userShare: 50
@@ -638,14 +644,15 @@ const handleSave = (trackId: string) => {
 const handleAddSplit = (trackId: string, split: { name: string; email: string; share: number }) => {
   const track = release.tracks.find(t => t.trackId === trackId)
   if (track) {
-    // For RLS: check if collaborator has a Ditto account (simulated via knownCollaborators)
-    // Active if they have an account, unclaimed if they don't
+    // Check if collaborator has a Ditto account (simulated via knownCollaborators)
+    const hasAccount = knownCollaborators.some(
+      c => c.email.toLowerCase() === split.email.toLowerCase()
+    )
+    
+    // For RLS: Active if they have an account, unclaimed if they don't
     // For subscription: always pending until they confirm
     let status: 'pending' | 'active' | 'unclaimed' = 'pending'
     if (isRLS.value) {
-      const hasAccount = knownCollaborators.some(
-        c => c.email.toLowerCase() === split.email.toLowerCase()
-      )
       status = hasAccount ? 'active' : 'unclaimed'
     }
     
@@ -655,6 +662,7 @@ const handleAddSplit = (trackId: string, split: { name: string; email: string; s
       email: split.email,
       share: split.share,
       status,
+      hasAccount, // Track whether they have an account (for subscription mode indicator)
       activeSince: status === 'active' ? new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : undefined
     })
     // Recalculate user share (rejected splits don't reduce user share)

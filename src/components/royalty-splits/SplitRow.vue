@@ -56,7 +56,20 @@
         class="w-full text-sm text-ditto-blue font-satoshi border-b border-faded-grey pb-1 focus:border-brand-secondary focus:outline-none bg-transparent"
         @input="emitUpdate"
       />
-      <span v-else class="text-sm text-ditto-blue font-satoshi">{{ email }}</span>
+      <div v-else class="flex items-center gap-1.5">
+        <span class="text-sm text-ditto-blue font-satoshi">{{ email }}</span>
+        <!-- Unregistered indicator (subscription mode only, not RLS) -->
+        <div v-if="!isRLS && hasAccount === false" class="relative group">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="text-amber-500 cursor-help">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M8 5V8.5M8 10.5V10.51" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-ditto-blue text-white text-[10px] rounded-lg w-44 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+            Not registered yet. They'll need to create a Ditto account to approve.
+            <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ditto-blue" />
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Share and status -->
@@ -328,6 +341,7 @@ const props = withDefaults(defineProps<{
   currentTotalShare?: number // Total share already allocated (excluding this row)
   originalShare?: number // The share value before editing (for showing pending changes)
   isRLS?: boolean
+  hasAccount?: boolean // Whether the collaborator has a Ditto account
 }>(), {
   isEditable: false,
   canEditEmail: false,

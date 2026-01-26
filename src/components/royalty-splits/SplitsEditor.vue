@@ -51,6 +51,7 @@
         :status="split.status"
         :active-since="split.activeSince"
         :original-share="split.originalShare"
+        :has-account="split.hasAccount"
         :share-index="index + 1"
         :is-editable="false"
         :can-edit-email="false"

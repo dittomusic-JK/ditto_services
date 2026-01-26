@@ -19,6 +19,7 @@ export interface Collaborator {
   status: SplitStatus
   activeSince?: string
   originalShare?: number // The share value before editing (for showing pending changes)
+  hasAccount?: boolean // Whether the collaborator has a Ditto account (for subscription mode)
 }
 
 export interface TrackSplit {
