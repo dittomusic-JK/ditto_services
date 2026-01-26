@@ -225,9 +225,9 @@ watch([hasFormData, () => ({ ...newSplit })], ([isDirty, splitData]) => {
   emit('dirty-change', isDirty, isDirty && canAddSplit.value ? splitData : null)
 }, { deep: true })
 
-// Can save if there are pending changes OR a valid new split is being entered
+// Can save only if there's a valid new split to add
 const canSave = computed(() => {
-  return props.hasChanges || canAddSplit.value
+  return canAddSplit.value
 })
 
 // Save handler - if there's a valid new split, add it first then save

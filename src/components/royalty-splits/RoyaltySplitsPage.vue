@@ -185,9 +185,8 @@ const lastSavedTrackId = ref<string | null>(null)
 const showUnsavedChangesModal = ref(false)
 const pendingTrackSwitch = ref<string | null>(null)
 
-// Computed: check if there are any unsaved changes (saved splits or form data being typed)
+// Computed: check if there are any unsaved changes (only form data being typed, not edits)
 const hasUnsavedChanges = computed(() => 
-  Object.values(pendingChanges).some(hasChanges => hasChanges) ||
   Object.values(dirtyForms).some(isDirty => isDirty)
 )
 
@@ -598,8 +597,8 @@ const toggleTrack = (trackId: string) => {
     return
   }
   
-  // If expanding a different track while current one has unsaved changes or dirty form, show modal
-  if (expandedTrackId.value && (pendingChanges[expandedTrackId.value] || dirtyForms[expandedTrackId.value])) {
+  // If expanding a different track while current one has unsaved form data, show modal
+  if (expandedTrackId.value && dirtyForms[expandedTrackId.value]) {
     pendingTrackSwitch.value = trackId
     showUnsavedChangesModal.value = true
     return
@@ -619,10 +618,12 @@ const hasChangesForTrack = (trackId: string): boolean => {
 
 const handleSave = (trackId: string) => {
   // Check if this is the first split being saved on the release
-  const totalSplitsBeforeSave = release.tracks.reduce((sum, t) => sum + t.splits.length, 0)
-  const isFirstSplit = totalSplitsBeforeSave === 1 && !hasShownFirstSplitModal.value
+  const totalSplitsOnTrack = release.tracks.find(t => t.trackId === trackId)?.splits.length ?? 0
+  const totalSplitsOnRelease = release.tracks.reduce((sum, t) => sum + t.splits.length, 0)
+  const isFirstSplit = totalSplitsOnRelease === 1 && !hasShownFirstSplitModal.value
   
-  pendingChanges[trackId] = false
+  // Clear the dirty form state since we just saved
+  dirtyForms[trackId] = false
   lastSavedTrackId.value = trackId
   
   // Show first split modal if this is the first one, otherwise show toast
@@ -630,7 +631,7 @@ const handleSave = (trackId: string) => {
     hasShownFirstSplitModal.value = true
     showFirstSplitModal.value = true
   } else {
-    showToast('Splits saved successfully')
+    showToast('Split added successfully')
   }
 }
 
@@ -658,7 +659,7 @@ const handleAddSplit = (trackId: string, split: { name: string; email: string; s
     })
     // Recalculate user share (rejected splits don't reduce user share)
     track.userShare = Math.max(0, 100 - track.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
-    pendingChanges[trackId] = true
+    // Note: Adding a split is saved immediately, no pendingChanges needed
   }
 }
 
@@ -671,7 +672,7 @@ const handleRemoveSplit = (trackId: string, splitId: string) => {
       track.splits.splice(splitIndex, 1)
       // Recalculate user share (rejected splits don't reduce user share)
       track.userShare = Math.max(0, 100 - track.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
-      pendingChanges[trackId] = true
+      // Remove is immediate, no pendingChanges needed
       showToast(`${removedName} removed from split`)
     }
   }
@@ -694,7 +695,7 @@ const handleUpdateShare = (trackId: string, splitId: string, newShare: number) =
     }
     // Recalculate user share (rejected splits don't reduce user share)
     track.userShare = Math.max(0, 100 - track.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
-    pendingChanges[trackId] = true
+    // Edit is immediate, no pendingChanges needed
     showToast(`${split.name}'s share updated from ${oldShare}% to ${newShare}%`)
   }
 }
