@@ -1,6 +1,6 @@
 <template>
   <!-- Desktop layout -->
-  <div class="hidden sm:grid grid-cols-[1fr_1fr_220px] gap-4 items-start py-3">
+  <div class="hidden sm:grid grid-cols-[1fr_1fr_220px] gap-4 items-start py-3" :class="isDeleted ? 'opacity-60' : ''">
     <!-- Name field with autocomplete -->
     <div class="relative">
       <label class="block text-xs text-ditto-grey mb-1 font-satoshi">Name:</label>
@@ -19,7 +19,7 @@
         @keydown.enter.prevent="selectHighlighted"
         @keydown.escape="showAutocomplete = false"
       />
-      <span v-else class="text-sm text-ditto-blue font-satoshi">{{ name }}</span>
+      <span v-else class="text-sm text-ditto-blue font-satoshi" :class="isDeleted ? 'line-through' : ''">{{ name }}</span>
       
       <!-- Autocomplete dropdown -->
       <div
@@ -57,7 +57,7 @@
         @input="emitUpdate"
       />
       <div v-else class="flex items-center gap-1.5">
-        <span class="text-sm text-ditto-blue font-satoshi">{{ email }}</span>
+        <span class="text-sm text-ditto-blue font-satoshi" :class="isDeleted ? 'line-through' : ''">{{ email }}</span>
         <!-- Unregistered indicator (subscription mode only, not RLS) -->
         <div v-if="!isRLS && hasAccount === false" class="relative group">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="text-amber-500 cursor-help">
@@ -91,23 +91,23 @@
             class="w-12 text-sm font-satoshi text-right border-b pb-1 focus:outline-none bg-transparent"
             :class="shareExceeds100 ? 'text-error border-error' : 'text-ditto-blue border-faded-grey focus:border-brand-secondary'"
             @input="isEditable ? emitUpdate() : null"
-            @keydown.enter="isEditingShare ? saveShareEdit() : null"
+            @keydown.enter="isEditingShare ? applyShareEdit() : null"
             @keydown.escape="cancelShareEdit"
           />
-          <span v-else class="text-sm font-satoshi" :class="status === 'rejected' ? 'text-error line-through' : 'text-ditto-blue'">{{ share }}</span>
-          <span class="text-sm font-satoshi" :class="shareExceeds100 || status === 'rejected' ? 'text-error' : 'text-ditto-grey'" :style="status === 'rejected' ? 'text-decoration: line-through' : ''">%</span>
+          <span v-else class="text-sm font-satoshi" :class="status === 'rejected' || isDeleted ? 'text-error line-through' : 'text-ditto-blue'">{{ share }}</span>
+          <span class="text-sm font-satoshi" :class="shareExceeds100 || status === 'rejected' || isDeleted ? 'text-error' : 'text-ditto-grey'" :style="status === 'rejected' || isDeleted ? 'text-decoration: line-through' : ''">%</span>
         </div>
         <p v-if="(isEditable || isEditingShare) && shareExceeds100" class="text-[10px] text-error font-satoshi mt-1 whitespace-nowrap">
           Exceeds 100%
         </p>
-        <!-- Save/Cancel buttons when editing share -->
+        <!-- Apply/Cancel buttons when editing share on saved split -->
         <div v-if="isEditingShare" class="flex items-center gap-1 mt-1.5 justify-end">
           <button
-            @click="saveShareEdit"
+            @click="applyShareEdit"
             :disabled="shareExceeds100 || localShare === share"
             class="px-2 py-0.5 text-[10px] font-medium rounded bg-brand-secondary text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save
+            Apply
           </button>
           <button
             @click="cancelShareEdit"
@@ -152,8 +152,8 @@
 
       <!-- Action buttons -->
       <div class="flex items-center gap-1 ml-auto">
-        <!-- Edit share icon (for active or rejected splits) -->
-        <div v-if="!isEditable && !isEditingShare && (status === 'active' || status === 'rejected' || (isRLS && status === 'unclaimed'))" class="relative group">
+        <!-- Edit share button (for saved splits) -->
+        <div v-if="!isEditable && !isEditingShare && !isDeleted && (status === 'active' || status === 'pending' || (isRLS && status === 'unclaimed'))" class="relative group">
           <button
             @click="startShareEdit"
             class="p-1.5 transition-colors" :class="isRLS ? 'text-rls-text-secondary hover:text-rls-accent' : 'text-ditto-grey hover:text-brand-secondary'"
@@ -161,12 +161,12 @@
             <EditIcon />
           </button>
           <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" :class="isRLS ? 'bg-rls-bg-elevated border border-rls-border' : 'bg-ditto-blue'">
-            {{ status === 'rejected' ? 'Edit & resend offer' : 'Edit share' }}
+            Edit share
           </div>
         </div>
 
-        <!-- Resend confirmation (for pending splits - not shown for RLS) -->
-        <div v-if="!isEditable && status === 'pending' && !isRLS" class="relative group">
+        <!-- Resend confirmation (for pending splits in read-only mode - not shown for RLS) -->
+        <div v-if="!isEditable && !isEditingShare && status === 'pending' && !isRLS" class="relative group">
           <button
             @click="$emit('resend')"
             class="p-1.5 text-ditto-grey hover:text-brand-secondary transition-colors"
@@ -329,6 +329,7 @@ export interface KnownCollaborator {
 }
 
 const props = withDefaults(defineProps<{
+  splitId?: string
   name: string
   email: string
   share: number
@@ -336,6 +337,8 @@ const props = withDefaults(defineProps<{
   activeSince?: string
   shareIndex?: number
   isEditable?: boolean
+  isNew?: boolean // Is this a new split not yet saved
+  isDeleted?: boolean // Is this split marked for deletion
   canEditEmail?: boolean
   knownCollaborators?: KnownCollaborator[]
   currentTotalShare?: number // Total share already allocated (excluding this row)
@@ -344,6 +347,8 @@ const props = withDefaults(defineProps<{
   hasAccount?: boolean // Whether the collaborator has a Ditto account
 }>(), {
   isEditable: false,
+  isNew: false,
+  isDeleted: false,
   canEditEmail: false,
   knownCollaborators: () => [],
   currentTotalShare: 0,
@@ -353,8 +358,6 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   update: [{ name: string; email: string; share: number }]
   remove: []
-  'edit-share': []
-  'update-share': [newShare: number]
   resend: []
 }>()
 
@@ -422,7 +425,7 @@ const hideAutocompleteDelayed = () => {
   setTimeout(() => { showAutocomplete.value = false }, 150)
 }
 
-// Share editing
+// Inline share editing for saved splits
 const startShareEdit = () => {
   localShare.value = props.share
   isEditingShare.value = true
@@ -432,9 +435,10 @@ const startShareEdit = () => {
   })
 }
 
-const saveShareEdit = () => {
+const applyShareEdit = () => {
   if (!shareExceeds100.value && localShare.value !== props.share) {
-    emit('update-share', localShare.value)
+    // Emit update to mark this split as edited
+    emitUpdate()
   }
   isEditingShare.value = false
 }
@@ -443,8 +447,6 @@ const cancelShareEdit = () => {
   localShare.value = props.share
   isEditingShare.value = false
 }
-
-
 const shareLabel = computed(() => {
   if (props.shareIndex !== undefined) {
     return `Share #${props.shareIndex}`

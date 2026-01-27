@@ -64,17 +64,6 @@
         <strong class="text-ditto-blue">Splits apply from confirmation date.</strong> Collaborators receive an email to accept. Until confirmed, all royalties remain yours.
       </p>
     </div>
-    <div 
-      v-else-if="userType === 'rls'"
-      class="mt-3 flex items-start gap-2 text-xs text-ditto-grey font-satoshi"
-    >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0 mt-0.5">
-        <path d="M13.3 5.3L6 12.7L2.7 9.3" stroke="#00E785" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <p class="leading-relaxed">
-        As a Label Services client, splits are applied automatically.
-      </p>
-    </div>
   </div>
 </template>
 

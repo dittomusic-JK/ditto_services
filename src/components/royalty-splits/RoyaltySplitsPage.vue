@@ -33,17 +33,19 @@
             <span class="text-ditto-grey">Pending</span>
           </div>
         </template>
-        <div class="flex items-center gap-1.5">
-          <div class="w-2.5 h-2.5 rounded-full" :class="isRLS ? 'bg-warning' : 'bg-orange-500'" />
-          <span class="text-ditto-grey">Unclaimed</span>
-        </div>
+        <template v-if="isRLS">
+          <div class="flex items-center gap-1.5">
+            <div class="w-2.5 h-2.5 rounded-full bg-warning" />
+            <span class="text-ditto-grey">Unclaimed</span>
+          </div>
+        </template>
       </div>
     </div>
 
     <!-- RLS Info Banner -->
     <div v-if="isRLS" class="bg-rls-card rounded-xl p-4 border border-rls-border">
       <p class="text-sm text-rls-text-secondary font-satoshi">
-        Manage royalty splits for your artists. Unclaimed shares are held until collaborators create their Ditto account to withdraw.
+        Manage royalty splits for your artists. As a Label Services client, splits are applied automatically. Unclaimed shares are held until collaborators create their Ditto account to withdraw.
       </p>
     </div>
 
@@ -87,10 +89,7 @@
       :known-collaborators="knownCollaborators"
       :is-r-l-s="isRLS"
       @toggle="toggleTrack"
-      @save="handleSave"
-      @add-split="handleAddSplit"
-      @remove-split="handleRemoveSplit"
-      @update-share="handleUpdateShare"
+      @save="handleBatchSave"
       @resend-confirmation="handleResendConfirmation"
       @open-copy-modal="openCopyFromModal"
       @copy-to="openCopyToModal"
@@ -622,31 +621,48 @@ const hasChangesForTrack = (trackId: string): boolean => {
   return pendingChanges[trackId] ?? false
 }
 
-const handleSave = (trackId: string) => {
-  // Check if this is the first split being saved on the release
-  const totalSplitsOnTrack = release.tracks.find(t => t.trackId === trackId)?.splits.length ?? 0
-  const totalSplitsOnRelease = release.tracks.reduce((sum, t) => sum + t.splits.length, 0)
-  const isFirstSplit = totalSplitsOnRelease === 1 && !hasShownFirstSplitModal.value
-  
-  // Clear the dirty form state since we just saved
-  dirtyForms[trackId] = false
-  lastSavedTrackId.value = trackId
-  
-  // Show first split modal if this is the first one, otherwise show toast
-  if (isFirstSplit) {
-    hasShownFirstSplitModal.value = true
-    showFirstSplitModal.value = true
-  } else {
-    showToast('Split added successfully')
-  }
-}
-
-const handleAddSplit = (trackId: string, split: { name: string; email: string; share: number }) => {
+// Batch save handler - applies all changes at once
+const handleBatchSave = (trackId: string, changes: { added: Collaborator[], edited: Collaborator[], deleted: string[] }) => {
   const track = release.tracks.find(t => t.trackId === trackId)
-  if (track) {
+  if (!track) return
+  
+  const totalChanges = changes.added.length + changes.edited.length + changes.deleted.length
+  const hadSplitsBefore = track.splits.length > 0
+  
+  // Process deletions first
+  changes.deleted.forEach(splitId => {
+    const splitIndex = track.splits.findIndex(s => s.id === splitId)
+    if (splitIndex > -1) {
+      track.splits.splice(splitIndex, 1)
+    }
+  })
+  
+  // Process edits
+  changes.edited.forEach(editedSplit => {
+    const split = track.splits.find(s => s.id === editedSplit.id)
+    if (split) {
+      // Store original share if this was an active split (for showing pending change indicator)
+      if (!isRLS.value && split.status === 'active' && split.originalShare === undefined) {
+        split.originalShare = split.share
+      }
+      
+      split.name = editedSplit.name
+      split.email = editedSplit.email
+      split.share = editedSplit.share
+      
+      // When editing an active or rejected split, it becomes pending again (needs re-confirmation)
+      // For RLS: no pending status, keep as active or unclaimed
+      if (!isRLS.value && (split.status === 'active' || split.status === 'rejected')) {
+        split.status = 'pending'
+      }
+    }
+  })
+  
+  // Process additions
+  changes.added.forEach(newSplit => {
     // Check if collaborator has a Ditto account (simulated via knownCollaborators)
     const hasAccount = knownCollaborators.some(
-      c => c.email.toLowerCase() === split.email.toLowerCase()
+      c => c.email.toLowerCase() === newSplit.email.toLowerCase()
     )
     
     // For RLS: Active if they have an account, unclaimed if they don't
@@ -657,54 +673,40 @@ const handleAddSplit = (trackId: string, split: { name: string; email: string; s
     }
     
     track.splits.push({
-      id: `s${Date.now()}`,
-      name: split.name,
-      email: split.email,
-      share: split.share,
+      ...newSplit,
+      id: `s${Date.now()}_${Math.random()}`,
       status,
-      hasAccount, // Track whether they have an account (for subscription mode indicator)
+      hasAccount,
       activeSince: status === 'active' ? new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : undefined
     })
-    // Recalculate user share (rejected splits don't reduce user share)
-    track.userShare = Math.max(0, 100 - track.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
-    // Note: Adding a split is saved immediately, no pendingChanges needed
-  }
-}
-
-const handleRemoveSplit = (trackId: string, splitId: string) => {
-  const track = release.tracks.find(t => t.trackId === trackId)
-  if (track) {
-    const splitIndex = track.splits.findIndex(s => s.id === splitId)
-    if (splitIndex > -1) {
-      const removedName = track.splits[splitIndex].name
-      track.splits.splice(splitIndex, 1)
-      // Recalculate user share (rejected splits don't reduce user share)
-      track.userShare = Math.max(0, 100 - track.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
-      // Remove is immediate, no pendingChanges needed
-      showToast(`${removedName} removed from split`)
+  })
+  
+  // Recalculate user share (rejected splits don't reduce user share)
+  track.userShare = Math.max(0, 100 - track.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
+  
+  // Clear the dirty form state since we just saved
+  dirtyForms[trackId] = false
+  lastSavedTrackId.value = trackId
+  
+  // Check if this is the first split being saved on the release
+  const totalSplitsOnRelease = release.tracks.reduce((sum, t) => sum + t.splits.length, 0)
+  const isFirstSplit = !hadSplitsBefore && totalSplitsOnRelease > 0 && !hasShownFirstSplitModal.value
+  
+  // Show first split modal if this is the first one, otherwise show toast
+  if (isFirstSplit) {
+    hasShownFirstSplitModal.value = true
+    showFirstSplitModal.value = true
+  } else {
+    // Show appropriate success message
+    if (totalChanges === 1 && changes.added.length === 1) {
+      showToast('Split added successfully')
+    } else if (totalChanges === 1 && changes.edited.length === 1) {
+      showToast('Split updated successfully')
+    } else if (totalChanges === 1 && changes.deleted.length === 1) {
+      showToast('Split removed successfully')
+    } else {
+      showToast(`${totalChanges} change${totalChanges > 1 ? 's' : ''} saved successfully`)
     }
-  }
-}
-
-const handleUpdateShare = (trackId: string, splitId: string, newShare: number) => {
-  const track = release.tracks.find(t => t.trackId === trackId)
-  const split = track?.splits.find(s => s.id === splitId)
-  if (track && split) {
-    const oldShare = split.share
-    // For subscription mode: Store original share if this was an active split (for showing pending change indicator)
-    if (!isRLS.value && split.status === 'active' && split.originalShare === undefined) {
-      split.originalShare = oldShare
-    }
-    split.share = newShare
-    // When editing an active or rejected split, it becomes pending again (needs re-confirmation)
-    // For RLS: no pending status, keep as active or unclaimed
-    if (!isRLS.value && (split.status === 'active' || split.status === 'rejected')) {
-      split.status = 'pending'
-    }
-    // Recalculate user share (rejected splits don't reduce user share)
-    track.userShare = Math.max(0, 100 - track.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
-    // Edit is immediate, no pendingChanges needed
-    showToast(`${split.name}'s share updated from ${oldShare}% to ${newShare}%`)
   }
 }
 
@@ -717,9 +719,8 @@ const handleResendConfirmation = (trackId: string, splitId: string) => {
 }
 
 // Track when form has unsaved data being typed
-const handleDirtyChange = (trackId: string, isDirty: boolean, pendingSplit: { name: string; email: string; share: number } | null) => {
+const handleDirtyChange = (trackId: string, isDirty: boolean) => {
   dirtyForms[trackId] = isDirty
-  pendingSplits[trackId] = pendingSplit
 }
 
 // Open copy from modal (unified flow with source selection inside modal)
@@ -862,27 +863,19 @@ const handleBackClick = () => {
 
 // Save all changes and then leave (or switch tracks)
 const handleSaveAllAndLeave = () => {
-  // First, add any pending splits that were being typed
-  Object.keys(pendingSplits).forEach(trackId => {
-    const split = pendingSplits[trackId]
-    if (split) {
-      handleAddSplit(trackId, split)
-      pendingSplits[trackId] = null
-    }
-  })
+  // With batch editing, there's nothing to auto-save on leave
+  // User must explicitly click Save Splits before leaving
+  // This modal shouldn't appear if there are unsaved changes in SplitsEditor
   
-  // Save all tracks with pending changes
+  // Clear all pending changes
   Object.keys(pendingChanges).forEach(trackId => {
-    if (pendingChanges[trackId]) {
-      pendingChanges[trackId] = false
-    }
+    pendingChanges[trackId] = false
   })
   // Clear dirty form states
   Object.keys(dirtyForms).forEach(trackId => {
     dirtyForms[trackId] = false
   })
   showUnsavedChangesModal.value = false
-  showToast('All changes saved')
   
   // If we were switching tracks, do that now
   if (pendingTrackSwitch.value) {

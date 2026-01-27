@@ -199,7 +199,7 @@
         <!-- Audio Fingerprint Services -->
         <FeatureCard
           title="Audio Fingerprint Services"
-          :badge="isStarter ? 'Available in Pro' : undefined"
+          :badge="isStarter ? 'Included in Pro' : undefined"
           badge-variant="green"
           description="Register your music with audio fingerprinting services for identification and royalty collection."
           :checked="includesFingerprint ? fingerprintEnabled : false"

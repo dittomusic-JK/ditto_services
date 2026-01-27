@@ -13,13 +13,13 @@
       <div>
         <span class="text-xs font-satoshi" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">Your Split:</span>
         <div class="flex items-center gap-1.5">
-          <!-- For RLS: just show userShare directly (no pending concept) -->
-          <p class="text-sm font-bold font-satoshi" :class="isRLS ? 'text-rls-accent' : 'text-brand-secondary'">{{ isRLS ? userShare : activeUserShare }}%</p>
-          <!-- Pending indicator - not shown for RLS -->
-          <template v-if="hasPendingChanges && !isRLS">
+          <!-- Show current user share based on staged splits -->
+          <p class="text-sm font-bold font-satoshi" :class="isRLS ? 'text-rls-accent' : 'text-brand-secondary'">{{ currentUserShare }}%</p>
+          <!-- Show pending indicator if there are unsaved changes -->
+          <template v-if="hasUnsavedChanges && !isRLS">
             <span class="text-ditto-grey">→</span>
-            <p class="text-sm font-bold text-amber-500 font-satoshi">{{ userShare }}%</p>
-            <span class="text-[10px] text-amber-500 font-satoshi">(pending)</span>
+            <p class="text-sm font-bold text-amber-500 font-satoshi">{{ currentUserShare }}%</p>
+            <span class="text-[10px] text-amber-500 font-satoshi">(unsaved)</span>
           </template>
         </div>
       </div>
@@ -28,10 +28,10 @@
     <!-- Splits section header -->
     <div class="flex items-center justify-between py-4">
       <h4 class="text-base font-bold font-poppins" :class="isRLS ? 'text-rls-text' : 'text-ditto-blue'">
-        Splits{{ existingSplits.length > 0 ? ` (${existingSplits.length})` : '' }}
+        Splits{{ visibleSplits.length > 0 ? ` (${visibleSplits.length})` : '' }}
       </h4>
       <button
-        @click="$emit('close')"
+        @click="handleClose"
         class="p-1 transition-colors" :class="isRLS ? 'text-rls-text-secondary hover:text-rls-text' : 'text-ditto-grey hover:text-ditto-blue'"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -40,11 +40,12 @@
       </button>
     </div>
 
-    <!-- Existing splits (read-only) -->
-    <div v-if="existingSplits.length > 0" class="divide-y" :class="isRLS ? 'divide-rls-border' : 'divide-faded-grey'">
+    <!-- All splits - existing (read-only) and new (editable) -->
+    <div v-if="visibleSplits.length > 0" class="divide-y" :class="isRLS ? 'divide-rls-border' : 'divide-faded-grey'">
       <SplitRow
-        v-for="(split, index) in existingSplits"
+        v-for="(split, index) in visibleSplits"
         :key="split.id"
+        :split-id="split.id"
         :name="split.name"
         :email="split.email"
         :share="split.share"
@@ -53,43 +54,30 @@
         :original-share="split.originalShare"
         :has-account="split.hasAccount"
         :share-index="index + 1"
-        :is-editable="false"
-        :can-edit-email="false"
+        :is-editable="split.isNew || false"
+        :is-new="split.isNew"
+        :is-deleted="split.isDeleted"
+        :known-collaborators="availableCollaborators"
         :current-total-share="currentTotalShare - split.share"
         :is-r-l-s="isRLS"
-        @remove="$emit('remove-split', split.id)"
-        @update-share="(newShare) => $emit('update-share', split.id, newShare)"
+        @update="(data) => handleSplitUpdate(split.id, data)"
+        @remove="handleRemoveSplit(split.id)"
         @resend="$emit('resend-confirmation', split.id)"
       />
     </div>
 
-    <!-- New split entry row (always shown) -->
+    <!-- Add new split button -->
     <div class="border-t pt-4" :class="isRLS ? 'border-rls-border' : 'border-faded-grey'">
-      <SplitRow
-        ref="newSplitRowRef"
-        :name="newSplit.name"
-        :email="newSplit.email"
-        :share="newSplit.share"
-        :is-editable="true"
-        :known-collaborators="availableCollaborators"
-        :current-total-share="currentTotalShare"
-        :is-r-l-s="isRLS"
-        @update="handleNewSplitUpdate"
-        @remove="clearNewSplit"
-      />
-      <!-- Duplicate collaborator warning -->
-      <p v-if="duplicateCollaborator" class="text-xs text-amber-600 font-satoshi mt-2 flex items-center gap-1.5">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M8 5V8.5M8 10.5V10.51" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <button
+        @click="addNewSplitRow"
+        class="flex items-center gap-2 px-4 py-2 border rounded-full text-sm font-medium font-satoshi transition-colors"
+        :class="isRLS ? 'border-rls-border text-rls-text-secondary hover:border-rls-accent hover:text-rls-accent' : 'border-faded-grey text-ditto-grey hover:border-brand-secondary hover:text-brand-secondary'"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 3.33334V12.6667M3.33333 8H12.6667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        {{ duplicateCollaborator.name }} is already on this track. Edit their existing split instead.
-      </p>
-      
-      <!-- Keyboard shortcut hint -->
-      <p class="text-xs font-satoshi mt-3 hidden sm:block text-center" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">
-        <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">{{ modifierKey }}</kbd> + <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">Enter</kbd> to save · <kbd class="px-1.5 py-0.5 border rounded text-[10px]" :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'">Esc</kbd> to close
-      </p>
+        Add Split
+      </button>
     </div>
 
     <!-- Action buttons -->
@@ -110,17 +98,24 @@
         </button>
       </div>
 
-      <!-- Save button -->
-      <button
-        @click="handleSave"
-        :disabled="!canSave"
-        class="flex items-center justify-center gap-2 px-6 py-2 border border-brand-secondary rounded-full text-sm font-semibold text-brand-secondary font-satoshi hover:bg-brand-secondary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M13.333 5.333L6 12.667 2.667 9.333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Save Splits
-      </button>
+      <!-- Save button with tooltip for validation errors -->
+      <div class="relative group">
+        <button
+          @click="handleSave"
+          :disabled="!canSave"
+          class="flex items-center justify-center gap-2 px-6 py-2 border border-brand-secondary rounded-full text-sm font-semibold text-brand-secondary font-satoshi hover:bg-brand-secondary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M13.333 5.333L6 12.667 2.667 9.333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Save Splits
+        </button>
+        <!-- Validation tooltip -->
+        <div v-if="sharesExceed100" class="absolute bottom-full right-0 mb-2 px-3 py-2 bg-ditto-blue text-white text-xs rounded-lg w-48 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+          Total shares cannot exceed 100%. Adjust the splits before saving.
+          <div class="absolute top-full right-6 border-4 border-transparent border-t-ditto-blue" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -129,6 +124,20 @@
 import { ref, computed, reactive, watch, onMounted } from 'vue'
 import type { Collaborator, TrackSplit } from '../../types'
 import SplitRow from './SplitRow.vue'
+
+interface StagedSplit {
+  id: string
+  name: string
+  email: string
+  share: number
+  status?: 'active' | 'pending' | 'rejected' | 'unclaimed'
+  activeSince?: string
+  originalShare?: number
+  hasAccount?: boolean
+  isNew?: boolean // New split not yet saved
+  isEdited?: boolean // Existing split that has been edited
+  isDeleted?: boolean // Marked for deletion
+}
 
 const props = defineProps<{
   accountHolder: string
@@ -140,8 +149,40 @@ const props = defineProps<{
   isRLS?: boolean
 }>()
 
-// Calculate total share already allocated (100 - userShare)
-const currentTotalShare = computed(() => 100 - props.userShare)
+// Local staged state - starts as a copy of existing splits
+const stagedSplits = ref<StagedSplit[]>([])
+
+// Initialize staged splits from props
+const initializeStagedSplits = () => {
+  stagedSplits.value = props.existingSplits.map(s => ({ ...s }))
+  // Always add an empty row when opening
+  addNewSplitRow()
+}
+
+// Initialize on mount and when existingSplits change
+onMounted(() => {
+  initializeStagedSplits()
+})
+
+watch(() => props.existingSplits, () => {
+  // Only reinitialize if there are no unsaved changes
+  if (!hasUnsavedChanges.value) {
+    initializeStagedSplits()
+  }
+}, { deep: true })
+
+// Calculate total share from staged splits (excluding deleted and rejected)
+const currentTotalShare = computed(() => {
+  const allocatedShares = stagedSplits.value
+    .filter(s => !s.isDeleted && s.status !== 'rejected')
+    .reduce((sum, s) => sum + s.share, 0)
+  return allocatedShares
+})
+
+// Calculate user's current share
+const currentUserShare = computed(() => {
+  return 100 - currentTotalShare.value
+})
 
 // Check if there are pending changes (only pending splits - rejected means share is back with user)
 const hasPendingChanges = computed(() => 
@@ -156,19 +197,36 @@ const activeUserShare = computed(() => {
   return 100 - activeTotal
 })
 
+// Check if total shares exceed 100%
+const sharesExceed100 = computed(() => {
+  return currentTotalShare.value > 100
+})
+
+// Check if there are any unsaved changes
+const hasUnsavedChanges = computed(() => {
+  // Check for new splits with actual data (not empty rows)
+  const hasNewSplits = stagedSplits.value.some(s => 
+    s.isNew && 
+    !s.isDeleted && 
+    (s.name.trim() !== '' || s.email.trim() !== '' || s.share > 0)
+  )
+  // Check for edited splits
+  const hasEditedSplits = stagedSplits.value.some(s => s.isEdited && !s.isDeleted)
+  // Check for deleted splits
+  const hasDeletedSplits = stagedSplits.value.some(s => s.isDeleted)
+  
+  return hasNewSplits || hasEditedSplits || hasDeletedSplits
+})
+
 const emit = defineEmits<{
   close: []
-  save: []
-  'add-split': [split: { name: string; email: string; share: number }]
-  'remove-split': [id: string]
-  'update-share': [id: string, newShare: number]
+  save: [changes: { added: Collaborator[], edited: Collaborator[], deleted: string[] }]
   'resend-confirmation': [id: string]
   'open-copy-modal': []
-  'dirty-change': [isDirty: boolean, pendingSplit: { name: string; email: string; share: number } | null]
+  'dirty-change': [isDirty: boolean]
 }>()
 
 const containerRef = ref<HTMLDivElement | null>(null)
-const newSplitRowRef = ref<InstanceType<typeof SplitRow> | null>(null)
 
 // Detect Mac vs Windows for keyboard shortcut display
 const isMac = computed(() => 
@@ -181,16 +239,18 @@ onMounted(() => {
   containerRef.value?.focus()
 })
 
-const newSplit = reactive({
-  name: '',
-  email: '',
-  share: 0
+// Emit dirty state changes
+watch(hasUnsavedChanges, (isDirty) => {
+  emit('dirty-change', isDirty)
 })
 
-// Get emails already in splits (including pending)
-const existingEmails = computed(() => 
-  new Set(props.existingSplits.map(s => s.email.toLowerCase()))
-)
+// Get emails already in splits (including staged, excluding deleted)
+const existingEmails = computed(() => {
+  const emails = stagedSplits.value
+    .filter(s => !s.isDeleted)
+    .map(s => s.email.toLowerCase())
+  return new Set(emails)
+})
 
 // Filter out already-added collaborators from the suggestions
 const availableCollaborators = computed(() => 
@@ -199,59 +259,106 @@ const availableCollaborators = computed(() =>
   )
 )
 
-// Check if the email already exists in splits
-const duplicateCollaborator = computed(() => {
-  if (!newSplit.email.trim()) return null
-  return props.existingSplits.find(
-    s => s.email.toLowerCase() === newSplit.email.toLowerCase().trim()
-  )
-})
+// Add a new empty split row
+const addNewSplitRow = () => {
+  stagedSplits.value.push({
+    id: `new_${Date.now()}_${Math.random()}`,
+    name: '',
+    email: '',
+    share: 0,
+    isNew: true
+  })
+}
 
-const canAddSplit = computed(() => {
-  return newSplit.name.trim() !== '' && 
-         newSplit.email.trim() !== '' && 
-         newSplit.share > 0 &&
-         !duplicateCollaborator.value
-})
+// Update a staged split
+const handleSplitUpdate = (id: string, data: { name: string; email: string; share: number }) => {
+  const split = stagedSplits.value.find(s => s.id === id)
+  if (split) {
+    split.name = data.name
+    split.email = data.email
+    split.share = data.share
+    
+    // Mark as edited if it's not a new split
+    if (!split.isNew) {
+      split.isEdited = true
+    }
+  }
+}
 
-// Check if form has any data entered (even if not complete)
-const hasFormData = computed(() => {
-  return newSplit.name.trim() !== '' || 
-         newSplit.email.trim() !== '' || 
-         newSplit.share > 0
-})
+// Mark a split for deletion
+const handleRemoveSplit = (id: string) => {
+  const split = stagedSplits.value.find(s => s.id === id)
+  if (split) {
+    if (split.isNew) {
+      // Remove new unsaved splits immediately
+      const index = stagedSplits.value.findIndex(s => s.id === id)
+      if (index > -1) {
+        stagedSplits.value.splice(index, 1)
+      }
+    } else {
+      // Mark existing splits as deleted
+      split.isDeleted = true
+    }
+  }
+}
 
-// Emit dirty state changes so parent can track unsaved form data
-watch([hasFormData, () => ({ ...newSplit })], ([isDirty, splitData]) => {
-  emit('dirty-change', isDirty, isDirty && canAddSplit.value ? splitData : null)
-}, { deep: true })
-
-// Can save only if there's a valid new split to add
+// Can save if there are unsaved changes and shares don't exceed 100%
 const canSave = computed(() => {
-  return canAddSplit.value
+  return hasUnsavedChanges.value && !sharesExceed100.value
 })
 
-// Save handler - if there's a valid new split, add it first then save
+// Save handler - collect all changes and emit
 const handleSave = () => {
-  // Only proceed if there's something to save
   if (!canSave.value) return
   
-  if (canAddSplit.value) {
-    emit('add-split', { ...newSplit })
-    clearNewSplit()
+  // Collect added splits (new, not deleted, with complete data)
+  const added = stagedSplits.value
+    .filter(s => s.isNew && !s.isDeleted && s.name.trim() && s.email.trim() && s.share > 0)
+    .map(s => ({
+      id: s.id,
+      name: s.name,
+      email: s.email,
+      share: s.share,
+      status: s.status,
+      activeSince: s.activeSince,
+      hasAccount: s.hasAccount
+    } as Collaborator))
+  
+  // Collect edited splits
+  const edited = stagedSplits.value
+    .filter(s => s.isEdited && !s.isDeleted && !s.isNew)
+    .map(s => ({
+      id: s.id,
+      name: s.name,
+      email: s.email,
+      share: s.share,
+      status: s.status,
+      activeSince: s.activeSince,
+      originalShare: s.originalShare,
+      hasAccount: s.hasAccount
+    } as Collaborator))
+  
+  // Collect deleted split IDs
+  const deleted = stagedSplits.value
+    .filter(s => s.isDeleted && !s.isNew)
+    .map(s => s.id)
+  
+  emit('save', { added, edited, deleted })
+  
+  // Reset staged state after save
+  initializeStagedSplits()
+}
+
+// Get all splits (including deleted ones which will show with strikethrough)
+const visibleSplits = computed(() => stagedSplits.value)
+
+// Handle close - check for unsaved changes
+const handleClose = () => {
+  if (hasUnsavedChanges.value) {
+    // Will be handled by parent's unsaved changes modal
+    emit('close')
+  } else {
+    emit('close')
   }
-  emit('save')
-}
-
-const handleNewSplitUpdate = (data: { name: string; email: string; share: number }) => {
-  newSplit.name = data.name
-  newSplit.email = data.email
-  newSplit.share = data.share
-}
-
-const clearNewSplit = () => {
-  newSplit.name = ''
-  newSplit.email = ''
-  newSplit.share = 0
 }
 </script>

@@ -171,13 +171,10 @@
           :known-collaborators="knownCollaborators"
           :is-r-l-s="isRLS"
           @close="$emit('toggle', track.trackId)"
-          @save="$emit('save', track.trackId)"
-          @add-split="(split) => $emit('add-split', track.trackId, split)"
-          @remove-split="(id) => $emit('remove-split', track.trackId, id)"
-          @update-share="(id, newShare) => $emit('update-share', track.trackId, id, newShare)"
+          @save="(changes) => $emit('save', track.trackId, changes)"
           @resend-confirmation="(id) => $emit('resend-confirmation', track.trackId, id)"
           @open-copy-modal="$emit('open-copy-modal', track.trackId)"
-          @dirty-change="(isDirty, pendingSplit) => $emit('dirty-change', track.trackId, isDirty, pendingSplit)"
+          @dirty-change="(isDirty) => $emit('dirty-change', track.trackId, isDirty)"
         />
       </div>
     </div>
@@ -200,14 +197,11 @@ const props = defineProps<{
 
 defineEmits<{
   toggle: [trackId: string]
-  save: [trackId: string]
-  'add-split': [trackId: string, split: { name: string; email: string; share: number }]
-  'remove-split': [trackId: string, splitId: string]
-  'update-share': [trackId: string, splitId: string, newShare: number]
+  save: [trackId: string, changes: { added: any[], edited: any[], deleted: string[] }]
   'resend-confirmation': [trackId: string, splitId: string]
   'open-copy-modal': [trackId: string]
   'copy-to': [trackId: string]
-  'dirty-change': [trackId: string, isDirty: boolean, pendingSplit: { name: string; email: string; share: number } | null]
+  'dirty-change': [trackId: string, isDirty: boolean]
 }>()
 
 const getOtherTracksWithSplits = (currentTrackId: string): TrackSplit[] => {
