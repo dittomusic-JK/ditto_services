@@ -1,11 +1,7 @@
 <template>
-  <div class="mb-4">
-    <h2 class="text-h4 font-bold text-ditto-blue font-poppins">
-      {{ title }}
-    </h2>
-    <p v-if="description" class="mt-1 text-sm text-ditto-grey font-satoshi leading-relaxed">
-      {{ description }}
-    </p>
+  <div class="section-header">
+    <h2 class="section-header__title">{{ title }}</h2>
+    <p v-if="description" class="section-header__desc">{{ description }}</p>
   </div>
 </template>
 
@@ -15,3 +11,24 @@ defineProps<{
   description?: string
 }>()
 </script>
+
+<style lang="scss" scoped>
+.section-header {
+  margin-bottom: 1rem;
+
+  &__title {
+    font-size: $text-h4;
+    font-weight: 700;
+    color: var(--blue);
+    font-family: $font-poppins;
+  }
+
+  &__desc {
+    margin-top: 0.25rem;
+    font-size: $text-sm;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+    line-height: 1.625;
+  }
+}
+</style>

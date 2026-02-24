@@ -1,16 +1,20 @@
 <template>
   <!-- Desktop layout -->
-  <div class="hidden sm:grid grid-cols-[1fr_1fr_220px] gap-4 items-start py-3" :class="isDeleted ? 'opacity-60' : ''">
+  <div
+    class="sr"
+    :class="{ 'sr--deleted': isDeleted }"
+    @focusout="handleRowFocusOut"
+  >
     <!-- Name field with autocomplete -->
-    <div class="relative">
-      <label class="block text-xs text-ditto-grey mb-1 font-satoshi">Name:</label>
+    <div class="sr__col--rel">
+      <label class="sr__label">Name:</label>
       <input
         v-if="isEditable"
         ref="nameInputRef"
         v-model="localName"
         type="text"
         placeholder="Enter name"
-        class="w-full text-sm text-ditto-blue font-satoshi border-b border-faded-grey pb-1 focus:border-brand-secondary focus:outline-none bg-transparent"
+        class="sr__input"
         @input="handleNameInput"
         @focus="showAutocomplete = filteredCollaborators.length > 0"
         @blur="hideAutocompleteDelayed"
@@ -19,301 +23,213 @@
         @keydown.enter.prevent="selectHighlighted"
         @keydown.escape="showAutocomplete = false"
       />
-      <span v-else class="text-sm text-ditto-blue font-satoshi" :class="isDeleted ? 'line-through' : ''">{{ name }}</span>
-      
+      <span v-else class="sr__val" :class="{ 'sr__val--struck': isDeleted }">{{ name }}</span>
+
       <!-- Autocomplete dropdown -->
       <div
         v-if="isEditable && showAutocomplete && filteredCollaborators.length > 0"
-        class="absolute top-full left-0 right-0 mt-1 border rounded-lg shadow-lg py-1 z-20 max-h-40 overflow-y-auto"
-        :class="isRLS ? 'bg-rls-bg-elevated border-rls-border' : 'bg-white border-faded-grey'"
+        class="sr__dropdown" :class="{ 'sr__dropdown--rls': isRLS }"
       >
         <button
           v-for="(collab, index) in filteredCollaborators"
           :key="collab.email"
           type="button"
-          class="w-full px-3 py-2 text-left text-sm font-satoshi transition-colors"
-          :class="index === highlightedIndex 
-            ? 'bg-brand-secondary/10 text-brand-secondary' 
-            : isRLS 
-              ? 'text-rls-text hover:bg-white/5' 
-              : 'text-ditto-blue hover:bg-light-grey'"
+          class="sr__dd-item"
+          :class="[index === highlightedIndex ? 'sr__dd-item--hl' : '', isRLS ? 'sr__dd-item--rls' : '']"
           @mousedown.prevent="selectCollaborator(collab)"
         >
-          <span class="font-medium">{{ collab.name }}</span>
-          <span class="text-xs ml-2" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">{{ collab.email }}</span>
+          <span class="sr__dd-name">{{ collab.name }}</span>
+          <span class="sr__dd-email" :class="{ 'sr__dd-email--rls': isRLS }">{{ collab.email }}</span>
         </button>
       </div>
     </div>
 
     <!-- Email field -->
     <div>
-      <label class="block text-xs text-ditto-grey mb-1 font-satoshi">Email*</label>
+      <label class="sr__label">Email*</label>
       <input
         v-if="isEditable"
         v-model="localEmail"
         type="email"
         placeholder="We'll contact them here"
-        class="w-full text-sm text-ditto-blue font-satoshi border-b border-faded-grey pb-1 focus:border-brand-secondary focus:outline-none bg-transparent"
+        class="sr__input"
         @input="emitUpdate"
       />
-      <div v-else class="flex items-center gap-1.5">
-        <span class="text-sm text-ditto-blue font-satoshi" :class="isDeleted ? 'line-through' : ''">{{ email }}</span>
-        <!-- Unregistered indicator (subscription mode only, not RLS) -->
-        <div v-if="!isRLS && hasAccount === false" class="relative group">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="text-amber-500 cursor-help">
+      <div v-else class="sr__email-ro">
+        <span class="sr__val" :class="{ 'sr__val--struck': isDeleted }">{{ email }}</span>
+        <!-- Unregistered indicator -->
+        <div v-if="!isRLS && hasAccount === false" class="sr__unreg-wrap">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="sr__unreg-icon">
             <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
             <path d="M8 5V8.5M8 10.5V10.51" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
-          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-ditto-blue text-white text-[10px] rounded-lg w-44 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+          <div class="sr__tooltip sr__tooltip--narrow">
             Not registered yet. They'll need to create a Ditto account to approve.
-            <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ditto-blue" />
+            <div class="sr__tooltip-arrow" />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Share and status -->
-    <div class="flex items-start gap-3">
-      <!-- Share input -->
-      <div class="text-right">
-        <label class="block text-xs text-ditto-grey mb-1 font-satoshi whitespace-nowrap">
-          {{ shareLabel }}
-        </label>
-        <div class="flex items-center gap-1">
-          <input
-            v-if="isEditable || isEditingShare"
-            ref="shareInputRef"
-            v-model.number="localShare"
-            type="number"
-            min="0"
-            max="100"
-            placeholder="0%"
-            class="w-12 text-sm font-satoshi text-right border-b pb-1 focus:outline-none bg-transparent"
-            :class="shareExceeds100 ? 'text-error border-error' : 'text-ditto-blue border-faded-grey focus:border-brand-secondary'"
-            @input="isEditable ? emitUpdate() : null"
-            @keydown.enter="isEditingShare ? applyShareEdit() : null"
-            @keydown.escape="cancelShareEdit"
-          />
-          <span v-else class="text-sm font-satoshi" :class="status === 'rejected' || isDeleted ? 'text-error line-through' : 'text-ditto-blue'">{{ share }}</span>
-          <span class="text-sm font-satoshi" :class="shareExceeds100 || status === 'rejected' || isDeleted ? 'text-error' : 'text-ditto-grey'" :style="status === 'rejected' || isDeleted ? 'text-decoration: line-through' : ''">%</span>
-        </div>
-        <p v-if="(isEditable || isEditingShare) && shareExceeds100" class="text-[10px] text-error font-satoshi mt-1 whitespace-nowrap">
-          Exceeds 100%
-        </p>
-        <!-- Apply/Cancel buttons when editing share on saved split -->
-        <div v-if="isEditingShare" class="flex items-center gap-1 mt-1.5 justify-end">
-          <button
-            @click="applyShareEdit"
-            :disabled="shareExceeds100 || localShare === share"
-            class="px-2 py-0.5 text-[10px] font-medium rounded bg-brand-secondary text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Apply
-          </button>
-          <button
-            @click="cancelShareEdit"
-            class="px-2 py-0.5 text-[10px] font-medium rounded border border-faded-grey text-ditto-grey hover:border-ditto-grey"
-          >
-            Cancel
-          </button>
-        </div>
+    <!-- Split value -->
+    <div class="sr__share">
+      <label class="sr__label sr__label--nowrap">{{ shareLabel }}</label>
+      <div class="sr__share-row">
+        <input
+          v-if="isEditable || isEditingShare"
+          ref="shareInputRef"
+          v-model.number="localShare"
+          type="number"
+          min="0" max="100"
+          placeholder="0%"
+          class="sr__share-input"
+          :class="{ 'sr__share-input--error': shareExceeds100 }"
+          @input="isEditable ? emitUpdate() : null"
+          @keydown.enter="isEditingShare ? applyShareEdit() : null"
+          @keydown.escape="cancelShareEdit"
+        />
+        <span v-else class="sr__val" :class="{ 'sr__val--error-struck': status === 'rejected' || isDeleted }">{{ share }}</span>
+        <span class="sr__pct" :class="{ 'sr__pct--error': shareExceeds100 || status === 'rejected' || isDeleted }" :style="status === 'rejected' || isDeleted ? 'text-decoration: line-through' : ''">%</span>
       </div>
+      <p v-if="(isEditable || isEditingShare) && shareExceeds100" class="sr__exceed">Exceeds 100%</p>
+      <div v-if="isEditingShare" class="sr__share-actions">
+        <button @click="applyShareEdit" :disabled="shareExceeds100 || localShare === share" class="sr__share-apply">Apply</button>
+        <button @click="cancelShareEdit" class="sr__share-cancel">Cancel</button>
+      </div>
+    </div>
 
-      <!-- Status indicator with tooltip -->
-      <div v-if="status && !isEditable && !isEditingShare" class="flex flex-col items-center w-[85px] relative group">
-        <!-- Show pending change indicator if originalShare differs (not for RLS) -->
+    <!-- Status indicator -->
+    <div class="sr__status">
+      <template v-if="status && !isEditable && !isEditingShare">
         <template v-if="hasPendingChange && !isRLS">
-          <div class="flex items-center gap-1 mb-1">
-            <span class="text-xs font-medium text-success font-satoshi">{{ originalShare }}%</span>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="text-ditto-grey">
+          <div class="sr__pend-change">
+            <span class="sr__pend-from">{{ originalShare }}%</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="sr__pend-arrow">
               <path d="M4 6H8M8 6L6 4M8 6L6 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <span class="text-xs font-medium text-amber-500 font-satoshi">{{ share }}%</span>
+            <span class="sr__pend-to">{{ share }}%</span>
           </div>
-          <div class="flex items-center gap-1">
-            <div class="w-2 h-2 rounded-full bg-amber-500" />
-            <span class="text-[10px] text-amber-600 font-satoshi">Pending</span>
+          <div class="sr__pend-badge">
+            <div class="sr__dot sr__dot--pending" />
+            <span class="sr__pend-label">Pending</span>
           </div>
         </template>
         <template v-else>
-          <div
-            class="w-2.5 h-2.5 rounded-full mb-1"
-            :class="statusDotClass"
-          />
-          <span class="text-xs font-satoshi text-center leading-tight cursor-help" :class="status === 'rejected' ? 'text-error' : isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">
+          <div class="sr__dot sr__dot--lg" :class="statusDotClass" />
+          <span class="sr__status-text" :class="{ 'sr__status-text--error': status === 'rejected', 'sr__status-text--rls': isRLS && status !== 'rejected' }">
             {{ displayStatusText }}
           </span>
         </template>
         <!-- Tooltip -->
-        <div v-if="statusTooltip" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-white text-[10px] rounded-lg w-48 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg" :class="isRLS ? 'bg-rls-bg-elevated border border-rls-border' : 'bg-ditto-blue'">
+        <div v-if="statusTooltip" class="sr__tooltip" :class="{ 'sr__tooltip--rls': isRLS }">
           {{ statusTooltip }}
-          <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" :class="isRLS ? 'border-t-rls-bg-elevated' : 'border-t-ditto-blue'" />
+          <div class="sr__tooltip-arrow" :class="{ 'sr__tooltip-arrow--rls': isRLS }" />
         </div>
+      </template>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="sr__actions">
+      <div v-if="!isEditable && !isEditingShare && !isDeleted && (status === 'active' || status === 'pending' || (isRLS && status === 'unclaimed'))" class="sr__act-wrap">
+        <button @click="isNew ? $emit('re-edit') : startShareEdit()" class="sr__icon-btn" :class="{ 'sr__icon-btn--rls': isRLS }">
+          <EditIcon />
+        </button>
+        <div class="sr__mini-tip" :class="{ 'sr__mini-tip--rls': isRLS }">Edit split</div>
       </div>
 
-      <!-- Action buttons -->
-      <div class="flex items-center gap-1 ml-auto">
-        <!-- Edit share button (for saved splits) -->
-        <div v-if="!isEditable && !isEditingShare && !isDeleted && (status === 'active' || status === 'pending' || (isRLS && status === 'unclaimed'))" class="relative group">
-          <button
-            @click="startShareEdit"
-            class="p-1.5 transition-colors" :class="isRLS ? 'text-rls-text-secondary hover:text-rls-accent' : 'text-ditto-grey hover:text-brand-secondary'"
-          >
-            <EditIcon />
-          </button>
-          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" :class="isRLS ? 'bg-rls-bg-elevated border border-rls-border' : 'bg-ditto-blue'">
-            Edit share
-          </div>
-        </div>
+      <div v-if="!isEditable && !isEditingShare && status === 'pending' && !isRLS" class="sr__act-wrap">
+        <button @click="$emit('resend')" class="sr__icon-btn"><SendIcon /></button>
+        <div class="sr__mini-tip">Resend confirmation email</div>
+      </div>
 
-        <!-- Resend confirmation (for pending splits in read-only mode - not shown for RLS) -->
-        <div v-if="!isEditable && !isEditingShare && status === 'pending' && !isRLS" class="relative group">
-          <button
-            @click="$emit('resend')"
-            class="p-1.5 text-ditto-grey hover:text-brand-secondary transition-colors"
-          >
-            <SendIcon />
-          </button>
-          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-ditto-blue text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-            Resend confirmation email
-          </div>
-        </div>
-
-        <!-- Delete button -->
-        <div class="relative group">
-          <button
-            @click="$emit('remove')"
-            class="p-1.5 text-error hover:text-error/80 transition-colors"
-          >
-            <TrashIcon />
-          </button>
-          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" :class="isRLS ? 'bg-rls-bg-elevated border border-rls-border' : 'bg-ditto-blue'">
-            Remove split
-          </div>
-        </div>
+      <div class="sr__act-wrap">
+        <button @click="$emit('remove')" class="sr__icon-btn sr__icon-btn--delete"><TrashIcon /></button>
+        <div class="sr__mini-tip" :class="{ 'sr__mini-tip--rls': isRLS }">Remove split</div>
       </div>
     </div>
   </div>
 
   <!-- Mobile layout -->
-  <div class="sm:hidden flex flex-col gap-3 py-3">
-    <!-- Row 1: Name and Share -->
-    <div class="flex gap-3">
-      <div class="flex-1 relative">
-        <label class="block text-xs text-ditto-grey mb-1 font-satoshi">Name:</label>
+  <div class="sr-m" @focusout="handleRowFocusOut">
+    <div class="sr-m__top">
+      <div class="sr-m__name">
+        <label class="sr__label">Name:</label>
         <input
           v-if="isEditable"
           v-model="localName"
           type="text"
           placeholder="Name"
-          class="w-full text-sm text-ditto-blue font-satoshi border-b border-faded-grey pb-1 focus:border-brand-secondary focus:outline-none bg-transparent"
+          class="sr__input"
           @input="handleNameInput"
           @focus="showAutocomplete = filteredCollaborators.length > 0"
           @blur="hideAutocompleteDelayed"
         />
-        <span v-else class="text-sm text-ditto-blue font-satoshi">{{ name }}</span>
-        
-        <!-- Mobile autocomplete dropdown -->
+        <span v-else class="sr__val">{{ name }}</span>
+
         <div
           v-if="isEditable && showAutocomplete && filteredCollaborators.length > 0"
-          class="absolute top-full left-0 right-0 mt-1 border rounded-lg shadow-lg py-1 z-20 max-h-32 overflow-y-auto"
-          :class="isRLS ? 'bg-rls-bg-elevated border-rls-border' : 'bg-white border-faded-grey'"
+          class="sr__dropdown sr__dropdown--short" :class="{ 'sr__dropdown--rls': isRLS }"
         >
           <button
             v-for="collab in filteredCollaborators"
             :key="collab.email"
             type="button"
-            class="w-full px-3 py-2 text-left text-sm font-satoshi transition-colors"
-            :class="isRLS ? 'text-rls-text hover:bg-white/5' : 'text-ditto-blue hover:bg-light-grey'"
+            class="sr__dd-item" :class="{ 'sr__dd-item--rls': isRLS }"
             @mousedown.prevent="selectCollaborator(collab)"
           >
-            <span class="font-medium">{{ collab.name }}</span>
+            <span class="sr__dd-name">{{ collab.name }}</span>
           </button>
         </div>
       </div>
-      <div class="w-16 shrink-0">
-        <label class="block text-xs text-ditto-grey mb-1 font-satoshi">{{ shareLabel }}</label>
-        <div class="flex items-center gap-1">
+      <div class="sr-m__share-col">
+        <label class="sr__label">{{ shareLabel }}</label>
+        <div class="sr-m__share-row">
           <input
             v-if="isEditable"
             v-model.number="localShare"
             type="number"
-            min="0"
-            max="100"
+            min="0" max="100"
             placeholder="0"
-            class="w-10 text-sm font-satoshi text-right border-b pb-1 focus:outline-none bg-transparent"
-            :class="shareExceeds100 ? 'text-error border-error' : 'text-ditto-blue border-faded-grey focus:border-brand-secondary'"
+            class="sr__share-input sr__share-input--mob"
+            :class="{ 'sr__share-input--error': shareExceeds100 }"
             @input="emitUpdate"
           />
-          <span v-else class="text-sm text-ditto-blue font-satoshi">{{ share }}</span>
-          <span class="text-sm font-satoshi" :class="shareExceeds100 ? 'text-error' : 'text-ditto-grey'">%</span>
+          <span v-else class="sr__val">{{ share }}</span>
+          <span class="sr__pct" :class="{ 'sr__pct--error': shareExceeds100 }">%</span>
         </div>
-        <p v-if="isEditable && shareExceeds100" class="text-[10px] text-error font-satoshi mt-1">
-          Exceeds 100%
-        </p>
+        <p v-if="isEditable && shareExceeds100" class="sr__exceed">Exceeds 100%</p>
       </div>
     </div>
 
-    <!-- Row 2: Email -->
     <div>
-      <label class="block text-xs text-ditto-grey mb-1 font-satoshi">Email*</label>
+      <label class="sr__label">Email*</label>
       <input
         v-if="isEditable"
         v-model="localEmail"
         type="email"
         placeholder="Email address"
-        class="w-full text-sm text-ditto-blue font-satoshi border-b border-faded-grey pb-1 focus:border-brand-secondary focus:outline-none bg-transparent"
+        class="sr__input"
         @input="emitUpdate"
       />
-      <span v-else class="text-sm text-ditto-blue font-satoshi">{{ email }}</span>
+      <span v-else class="sr__val">{{ email }}</span>
     </div>
 
-    <!-- Row 3: Status and actions (only for non-editable) -->
-    <div v-if="!isEditable" class="flex items-center justify-between">
-      <!-- Status indicator -->
-      <div v-if="status" class="flex items-center gap-2">
-        <div
-          class="w-2 h-2 rounded-full"
-          :class="statusDotClass"
-        />
-        <span class="text-xs text-ditto-grey font-satoshi">
-          {{ mobileStatusText }}
-        </span>
+    <div v-if="!isEditable" class="sr-m__footer">
+      <div v-if="status" class="sr-m__status">
+        <div class="sr__dot" :class="statusDotClass" />
+        <span class="sr-m__status-text">{{ mobileStatusText }}</span>
       </div>
       <div v-else />
 
-      <!-- Action buttons -->
-      <div class="flex items-center gap-1">
-        <button
-          v-if="status === 'active' || status === 'rejected'"
-          @click="$emit('edit-share')"
-          class="p-1.5 text-ditto-grey hover:text-brand-secondary transition-colors"
-        >
-          <EditIcon />
-        </button>
-        <button
-          v-if="status === 'pending'"
-          @click="$emit('resend')"
-          class="p-1.5 text-ditto-grey hover:text-brand-secondary transition-colors"
-        >
-          <SendIcon />
-        </button>
-        <button
-          @click="$emit('remove')"
-          class="p-1.5 text-error hover:text-error/80 transition-colors"
-        >
-          <TrashIcon />
-        </button>
+      <div class="sr-m__btns">
+        <button v-if="status === 'active' || status === 'rejected'" @click="$emit('edit-share')" class="sr__icon-btn"><EditIcon /></button>
+        <button v-if="status === 'pending'" @click="$emit('resend')" class="sr__icon-btn"><SendIcon /></button>
+        <button @click="$emit('remove')" class="sr__icon-btn sr__icon-btn--delete"><TrashIcon /></button>
       </div>
     </div>
 
-    <!-- Row 3 for editable: just the delete button -->
-    <div v-else class="flex justify-end">
-      <button
-        @click="$emit('remove')"
-        class="p-1.5 text-error hover:text-error/80 transition-colors"
-      >
-        <TrashIcon />
-      </button>
+    <div v-else class="sr-m__footer sr-m__footer--end">
+      <button @click="$emit('remove')" class="sr__icon-btn sr__icon-btn--delete"><TrashIcon /></button>
     </div>
   </div>
 </template>
@@ -359,6 +275,8 @@ const emit = defineEmits<{
   update: [{ name: string; email: string; share: number }]
   remove: []
   resend: []
+  commit: []
+  're-edit': []
 }>()
 
 const nameInputRef = ref<HTMLInputElement | null>(null)
@@ -369,10 +287,19 @@ const localShare = ref(props.share)
 const showAutocomplete = ref(false)
 const highlightedIndex = ref(-1)
 const isEditingShare = ref(false)
+const commitGuard = ref(false) // Prevents immediate re-commit after re-edit
 
 watch(() => props.name, (val) => { localName.value = val })
 watch(() => props.email, (val) => { localEmail.value = val })
 watch(() => props.share, (val) => { localShare.value = val })
+
+// When row switches back to editable (re-edit), set a brief guard to prevent immediate re-commit
+watch(() => props.isEditable, (newVal, oldVal) => {
+  if (newVal && !oldVal && props.isNew) {
+    commitGuard.value = true
+    setTimeout(() => { commitGuard.value = false }, 300)
+  }
+})
 
 // Inline validation: check if share exceeds 100%
 const shareExceeds100 = computed(() => {
@@ -425,6 +352,23 @@ const hideAutocompleteDelayed = () => {
   setTimeout(() => { showAutocomplete.value = false }, 150)
 }
 
+// Handle focus leaving the entire row — commit new splits with valid data
+const handleRowFocusOut = (e: FocusEvent) => {
+  if (!props.isEditable || !props.isNew) return
+  if (commitGuard.value) return
+  // Check if the new focus target is still within the same row
+  const row = (e.currentTarget as HTMLElement)
+  const relatedTarget = e.relatedTarget as HTMLElement | null
+  if (relatedTarget && row.contains(relatedTarget)) return
+  // Delay slightly to allow autocomplete mousedown to fire first
+  setTimeout(() => {
+    if (localName.value.trim() && localEmail.value.trim() && (localShare.value || 0) > 0) {
+      emitUpdate()
+      emit('commit')
+    }
+  }, 200)
+}
+
 // Inline share editing for saved splits
 const startShareEdit = () => {
   localShare.value = props.share
@@ -449,22 +393,19 @@ const cancelShareEdit = () => {
 }
 const shareLabel = computed(() => {
   if (props.shareIndex !== undefined) {
-    return `Share #${props.shareIndex}`
+    return `Split #${props.shareIndex}`
   }
-  return 'Share'
+  return 'Split'
 })
 
 const statusDotClass = computed(() => {
-  // For RLS, pending should show as active (green)
-  if (props.isRLS && props.status === 'pending') {
-    return 'bg-success'
-  }
+  if (props.isRLS && props.status === 'pending') return 'sr__dot--active'
   switch (props.status) {
-    case 'active': return 'bg-success'
-    case 'pending': return 'bg-amber-500'
-    case 'rejected': return 'bg-error'
-    case 'unclaimed': return props.isRLS ? 'bg-warning' : 'bg-orange-500'
-    default: return 'bg-ditto-grey'
+    case 'active': return 'sr__dot--active'
+    case 'pending': return 'sr__dot--pending'
+    case 'rejected': return 'sr__dot--rejected'
+    case 'unclaimed': return props.isRLS ? 'sr__dot--unclaimed-rls' : 'sr__dot--unclaimed'
+    default: return 'sr__dot--default'
   }
 })
 
@@ -520,11 +461,11 @@ const statusTooltip = computed(() => {
     case 'active':
       return props.activeSince ? `Active since ${props.activeSince}` : ''
     case 'pending':
-      return "The collaborator hasn't accepted their share via email yet."
+      return "The collaborator hasn't accepted their split via email yet."
     case 'rejected':
       return 'The collaborator declined this split offer. Edit to send a new offer.'
     case 'unclaimed':
-      return 'This collaborator needs to log in or create a Ditto account to claim their share.'
+      return 'This collaborator needs to log in or create a Ditto account to claim their split.'
     default:
       return ''
   }
@@ -538,3 +479,427 @@ const emitUpdate = () => {
   })
 }
 </script>
+
+<style lang="scss" scoped>
+/* ========= Shared elements (used in both desktop & mobile) ========= */
+
+.sr__label {
+  display: block;
+  font-size: $text-xs;
+  color: var(--ditto-grey);
+  margin-bottom: 0.25rem;
+  font-family: $font-satoshi;
+
+  &--nowrap { white-space: nowrap; }
+}
+
+.sr__input {
+  width: 100%;
+  font-size: $text-sm;
+  color: var(--blue);
+  font-family: $font-satoshi;
+  border-bottom: 1px solid var(--faded-grey);
+  padding-bottom: 0.25rem;
+  background: transparent;
+
+  &:focus {
+    border-color: var(--brand-secondary);
+    outline: none;
+  }
+}
+
+.sr__val {
+  font-size: $text-sm;
+  color: var(--blue);
+  font-family: $font-satoshi;
+
+  &--struck { text-decoration: line-through; }
+  &--error-struck {
+    color: var(--error);
+    text-decoration: line-through;
+  }
+}
+
+.sr__pct {
+  font-size: $text-sm;
+  font-family: $font-satoshi;
+  color: var(--ditto-grey);
+
+  &--error { color: var(--error); }
+}
+
+/* Autocomplete dropdown */
+.sr__dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  border: 1px solid var(--faded-grey);
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  padding: 0.25rem 0;
+  z-index: 20;
+  max-height: 10rem;
+  overflow-y: auto;
+  background: #fff;
+
+  &--rls {
+    background: var(--rls-bg-elevated);
+    border-color: var(--rls-border);
+  }
+
+  &--short { max-height: 8rem; }
+}
+
+.sr__dd-item {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: $text-sm;
+  font-family: $font-satoshi;
+  transition: color 0.15s, background 0.15s;
+  color: var(--blue);
+
+  &:hover { background: var(--light-grey); }
+
+  &--hl {
+    background: rgba($color-brand-secondary, 0.1);
+    color: var(--brand-secondary);
+  }
+
+  &--rls {
+    color: var(--rls-text);
+    &:hover { background: rgba(255, 255, 255, 0.05); }
+  }
+}
+
+.sr__dd-name { font-weight: 500; }
+
+.sr__dd-email {
+  font-size: $text-xs;
+  margin-left: 0.5rem;
+  color: var(--ditto-grey);
+
+  &--rls { color: var(--rls-text-secondary); }
+}
+
+/* Dot indicator */
+.sr__dot {
+  border-radius: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+
+  &--lg { width: 0.625rem; height: 0.625rem; margin-bottom: 0.25rem; }
+  &--active { background: var(--success); }
+  &--pending { background: $color-amber-500; }
+  &--rejected { background: var(--error); }
+  &--unclaimed { background: $color-orange-500; }
+  &--unclaimed-rls { background: var(--warning); }
+  &--default { background: var(--ditto-grey); }
+}
+
+/* Tooltip (shared) */
+@mixin sr-tip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: #fff;
+  font-size: 10px;
+  border-radius: $radius-lg;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--blue);
+}
+
+.sr__tooltip {
+  @include sr-tip;
+  width: 12rem;
+
+  &--narrow { width: 11rem; }
+  &--rls {
+    background: var(--rls-bg-elevated);
+    border: 1px solid var(--rls-border);
+  }
+}
+
+.sr__tooltip-arrow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--blue);
+
+  &--rls { border-top-color: var(--rls-bg-elevated); }
+}
+
+.sr__mini-tip {
+  @include sr-tip;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+  width: auto;
+
+  &--rls {
+    background: var(--rls-bg-elevated);
+    border: 1px solid var(--rls-border);
+  }
+}
+
+/* Icon buttons */
+.sr__icon-btn {
+  padding: 0.375rem;
+  transition: color 0.15s;
+  color: var(--ditto-grey);
+
+  &:hover { color: var(--brand-secondary); }
+  &--rls {
+    color: var(--rls-text-secondary);
+    &:hover { color: var(--rls-accent); }
+  }
+  &--delete {
+    color: var(--error);
+    &:hover { color: rgba($color-error, 0.8); }
+  }
+}
+
+/* Share input */
+.sr__share-input {
+  width: 3rem;
+  font-size: $text-sm;
+  font-family: $font-satoshi;
+  text-align: left;
+  border-bottom: 1px solid var(--faded-grey);
+  padding-bottom: 0.25rem;
+  background: transparent;
+  color: var(--blue);
+
+  &:focus {
+    outline: none;
+    border-color: var(--brand-secondary);
+  }
+
+  &--error {
+    color: var(--error);
+    border-color: var(--error);
+  }
+
+  &--mob { text-align: right; width: 2.5rem; }
+}
+
+.sr__exceed {
+  font-size: 10px;
+  color: var(--error);
+  font-family: $font-satoshi;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+}
+
+.sr__share-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.375rem;
+  justify-content: flex-end;
+}
+
+.sr__share-apply {
+  padding: 0.125rem 0.5rem;
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  background: var(--brand-secondary);
+  color: #fff;
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.sr__share-cancel {
+  padding: 0.125rem 0.5rem;
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  border: 1px solid var(--faded-grey);
+  color: var(--ditto-grey);
+
+  &:hover { border-color: var(--ditto-grey); }
+}
+
+/* ========= Desktop layout ========= */
+
+.sr {
+  display: none;
+
+  @include sm {
+    display: grid;
+    grid-template-columns: 1fr 1fr 70px 85px 100px;
+    column-gap: 0.75rem;
+    row-gap: 0;
+    align-items: start;
+    padding: 0.75rem 0;
+  }
+
+  &--deleted { opacity: 0.6; }
+
+  &__col--rel { position: relative; }
+
+  &__email-ro {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  &__unreg-wrap {
+    position: relative;
+    &:hover > .sr__tooltip { opacity: 1; }
+  }
+
+  &__unreg-icon {
+    color: $color-amber-500;
+    cursor: help;
+  }
+
+  &__share { text-align: left; }
+
+  &__share-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+
+  &__status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: relative;
+
+    &:hover > .sr__tooltip { opacity: 1; }
+  }
+
+  &__status-text {
+    font-size: $text-xs;
+    font-family: $font-satoshi;
+    text-align: center;
+    line-height: 1.25;
+    cursor: help;
+    color: var(--ditto-grey);
+
+    &--error { color: var(--error); }
+    &--rls { color: var(--rls-text-secondary); }
+  }
+
+  &__pend-change {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  &__pend-from {
+    font-size: $text-xs;
+    font-weight: 500;
+    color: var(--success);
+    font-family: $font-satoshi;
+  }
+
+  &__pend-arrow { color: var(--ditto-grey); }
+
+  &__pend-to {
+    font-size: $text-xs;
+    font-weight: 500;
+    color: $color-amber-500;
+    font-family: $font-satoshi;
+  }
+
+  &__pend-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  &__pend-label {
+    font-size: 10px;
+    color: $color-amber-600;
+    font-family: $font-satoshi;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    justify-content: flex-end;
+  }
+
+  &__act-wrap {
+    position: relative;
+    &:hover > .sr__mini-tip { opacity: 1; }
+  }
+}
+
+/* ========= Mobile layout ========= */
+
+.sr-m {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+
+  @include sm { display: none; }
+
+  &__top {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  &__name {
+    flex: 1;
+    position: relative;
+  }
+
+  &__share-col {
+    width: 4rem;
+    flex-shrink: 0;
+  }
+
+  &__share-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    &--end { justify-content: flex-end; }
+  }
+
+  &__status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__status-text {
+    font-size: $text-xs;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+  }
+
+  &__btns {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+}
+</style>

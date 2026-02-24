@@ -1,50 +1,45 @@
 <template>
-  <div class="w-full max-w-[820px] px-2 sm:px-4 md:px-0 flex flex-col gap-5 min-h-screen">
+  <div class="rsp">
     <!-- Page header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="rsp__header">
       <div>
-        <button 
-          class="flex items-center gap-1 text-sm text-ditto-grey font-satoshi hover:text-ditto-blue transition-colors mb-2"
-          @click="handleBackClick"
-        >
+        <button class="rsp__back" @click="handleBackClick">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Back
         </button>
-        <h1 class="text-xl font-bold text-ditto-blue font-poppins">
-          Royalty Splits
-        </h1>
+        <h1 class="rsp__title">Royalty Splits</h1>
       </div>
       
-      <!-- Legend (hidden on mobile, shown in header on larger screens) -->
-      <div class="hidden sm:flex items-center gap-4 text-xs font-satoshi">
-        <div class="flex items-center gap-1.5">
-          <div class="w-2.5 h-2.5 rounded-full bg-brand-secondary" />
-          <span class="text-ditto-grey">Yours</span>
+      <!-- Legend -->
+      <div class="rsp__legend">
+        <div class="rsp__legend-item">
+          <div class="rsp__dot rsp__dot--yours" />
+          <span class="rsp__legend-label">Yours</span>
         </div>
-        <div class="flex items-center gap-1.5">
-          <div class="w-2.5 h-2.5 rounded-full bg-success" />
-          <span class="text-ditto-grey">{{ isRLS ? 'Active' : 'Collaborators' }}</span>
+        <div class="rsp__legend-item">
+          <div class="rsp__dot rsp__dot--collab" />
+          <span class="rsp__legend-label">{{ isRLS ? 'Active' : 'Collaborators' }}</span>
         </div>
         <template v-if="!isRLS">
-          <div class="flex items-center gap-1.5">
-            <div class="w-2.5 h-2.5 rounded-full bg-amber-400" />
-            <span class="text-ditto-grey">Pending</span>
+          <div class="rsp__legend-item">
+            <div class="rsp__dot rsp__dot--pending" />
+            <span class="rsp__legend-label">Pending</span>
           </div>
         </template>
         <template v-if="isRLS">
-          <div class="flex items-center gap-1.5">
-            <div class="w-2.5 h-2.5 rounded-full bg-warning" />
-            <span class="text-ditto-grey">Unclaimed</span>
+          <div class="rsp__legend-item">
+            <div class="rsp__dot rsp__dot--unclaimed" />
+            <span class="rsp__legend-label">Unclaimed</span>
           </div>
         </template>
       </div>
     </div>
 
     <!-- RLS Info Banner -->
-    <div v-if="isRLS" class="bg-rls-card rounded-xl p-4 border border-rls-border">
-      <p class="text-sm text-rls-text-secondary font-satoshi">
+    <div v-if="isRLS" class="rsp__rls-banner">
+      <p class="rsp__rls-banner-text">
         Manage royalty splits for your artists. As a Label Services client, splits are applied automatically. Unclaimed shares are held until collaborators create their Ditto account to withdraw.
       </p>
     </div>
@@ -59,28 +54,27 @@
       :tracks-with-splits="tracksWithSplits.length"
     />
 
-    <!-- Empty state - no splits configured yet -->
+    <!-- Empty state -->
     <div 
       v-if="tracksWithSplits.length === 0"
-      class="rounded-2xl border-2 border-dashed p-8 text-center"
-      :class="isRLS ? 'bg-rls-card border-rls-border' : 'bg-white border-faded-grey'"
+      class="rsp__empty" :class="{ 'rsp__empty--rls': isRLS }"
     >
-      <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" :class="isRLS ? 'bg-rls-accent/10' : 'bg-ditto-purple/10'">
+      <div class="rsp__empty-icon" :class="{ 'rsp__empty-icon--rls': isRLS }">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H6C4.93913 15 3.92172 15.4214 3.17157 16.1716C2.42143 16.9217 2 17.9391 2 19V21" :stroke="isRLS ? '#9e77ff' : '#6C5CE7'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <circle cx="9" cy="7" r="4" :stroke="isRLS ? '#9e77ff' : '#6C5CE7'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M19 8V14M16 11H22" :stroke="isRLS ? '#9e77ff' : '#6C5CE7'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
-      <h3 class="text-base font-semibold font-satoshi mb-2" :class="isRLS ? 'text-rls-text' : 'text-ditto-blue'">
+      <h3 class="rsp__empty-title" :class="{ 'rsp__empty-title--rls': isRLS }">
         No splits configured yet
       </h3>
-      <p class="text-sm font-satoshi mb-4 max-w-sm mx-auto" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">
+      <p class="rsp__empty-desc" :class="{ 'rsp__empty-desc--rls': isRLS }">
         Add collaborators to share royalties from this release. Click "Add Split" on any track below to get started.
       </p>
     </div>
 
-    <!-- Unified track list in natural order -->
+    <!-- Unified track list -->
     <TrackGroup
       :tracks="sortedTracks"
       :expanded-track-id="expandedTrackId"
@@ -88,6 +82,7 @@
       :pending-changes="pendingChanges"
       :known-collaborators="knownCollaborators"
       :is-r-l-s="isRLS"
+      :save-requested="saveRequestCounter"
       @toggle="toggleTrack"
       @save="handleBatchSave"
       @resend-confirmation="handleResendConfirmation"
@@ -96,7 +91,6 @@
       @dirty-change="handleDirtyChange"
     />
 
-    <!-- Copy Splits Modal (unified with source selection) -->
     <CopySplitsModal
       v-if="copyModal.show"
       :mode="copyModal.mode"
@@ -110,7 +104,6 @@
       @confirm="handleCopyConfirm"
     />
 
-    <!-- First Split Onboarding Modal -->
     <FirstSplitModal
       v-if="showFirstSplitModal"
       :other-tracks-count="tracksWithoutSplits.length"
@@ -119,7 +112,6 @@
       @copy-to-all="handleCopyFromFirstSplit"
     />
 
-    <!-- Edit Email Modal -->
     <EditEmailModal
       v-if="editEmailModal.show"
       :collaborator-name="editEmailModal.collaboratorName"
@@ -130,7 +122,6 @@
       @confirm="handleEditEmailConfirm"
     />
 
-    <!-- Unsaved Changes Modal -->
     <UnsavedChangesModal
       v-if="showUnsavedChangesModal"
       @save="handleSaveAllAndLeave"
@@ -138,7 +129,6 @@
       @cancel="handleCancelUnsavedChanges"
     />
 
-    <!-- Toast notification -->
     <Toast
       :visible="toast.visible"
       :message="toast.message"
@@ -176,6 +166,7 @@ const pendingChanges = reactive<Record<string, boolean>>({})
 const dirtyForms = reactive<Record<string, boolean>>({})
 const pendingSplits = reactive<Record<string, { name: string; email: string; share: number } | null>>({})
 const showFirstSplitModal = ref(false)
+const saveRequestCounter = ref(0)
 
 // Check if RLS (Label Services) mode
 const isRLS = computed(() => props.userType === 'rls')
@@ -627,7 +618,8 @@ const handleBatchSave = (trackId: string, changes: { added: Collaborator[], edit
   if (!track) return
   
   const totalChanges = changes.added.length + changes.edited.length + changes.deleted.length
-  const hadSplitsBefore = track.splits.length > 0
+  // Check if the entire release had any splits before this save (not just this track)
+  const releaseHadSplitsBefore = release.tracks.some(t => t.splits.length > 0)
   
   // Process deletions first
   changes.deleted.forEach(splitId => {
@@ -688,9 +680,14 @@ const handleBatchSave = (trackId: string, changes: { added: Collaborator[], edit
   dirtyForms[trackId] = false
   lastSavedTrackId.value = trackId
   
+  // If there was a pending track switch (from unsaved changes modal), do it now
+  if (pendingTrackSwitch.value) {
+    expandedTrackId.value = pendingTrackSwitch.value
+    pendingTrackSwitch.value = null
+  }
+  
   // Check if this is the first split being saved on the release
-  const totalSplitsOnRelease = release.tracks.reduce((sum, t) => sum + t.splits.length, 0)
-  const isFirstSplit = !hadSplitsBefore && totalSplitsOnRelease > 0 && !hasShownFirstSplitModal.value
+  const isFirstSplit = !releaseHadSplitsBefore && track.splits.length > 0 && !hasShownFirstSplitModal.value
   
   // Show first split modal if this is the first one, otherwise show toast
   if (isFirstSplit) {
@@ -863,27 +860,10 @@ const handleBackClick = () => {
 
 // Save all changes and then leave (or switch tracks)
 const handleSaveAllAndLeave = () => {
-  // With batch editing, there's nothing to auto-save on leave
-  // User must explicitly click Save Splits before leaving
-  // This modal shouldn't appear if there are unsaved changes in SplitsEditor
-  
-  // Clear all pending changes
-  Object.keys(pendingChanges).forEach(trackId => {
-    pendingChanges[trackId] = false
-  })
-  // Clear dirty form states
-  Object.keys(dirtyForms).forEach(trackId => {
-    dirtyForms[trackId] = false
-  })
   showUnsavedChangesModal.value = false
-  
-  // If we were switching tracks, do that now
-  if (pendingTrackSwitch.value) {
-    expandedTrackId.value = pendingTrackSwitch.value
-    pendingTrackSwitch.value = null
-  } else {
-    emit('back')
-  }
+  // Trigger SplitsEditor's save via the saveRequested counter.
+  // The actual track switch happens in handleBatchSave after the save completes.
+  saveRequestCounter.value++
 }
 
 // Discard all changes and leave (or switch tracks)
@@ -913,3 +893,146 @@ const handleCancelUnsavedChanges = () => {
   pendingTrackSwitch.value = null
 }
 </script>
+
+<style lang="scss" scoped>
+@use '@/styles/variables' as *;
+@use '@/styles/mixins' as *;
+
+.rsp {
+  width: 100%;
+  max-width: 820px;
+  padding: 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-height: 100vh;
+
+  @include sm { padding: 0 1rem; }
+  @include md { padding: 0; }
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    @include sm {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  &__back {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: $text-sm;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+    transition: color 0.15s;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+
+    &:hover { color: var(--blue); }
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--blue);
+    font-family: $font-poppins;
+  }
+
+  &__legend {
+    display: none;
+    align-items: center;
+    gap: 1rem;
+    font-size: $text-xs;
+    font-family: $font-satoshi;
+
+    @include sm { display: flex; }
+  }
+
+  &__legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  &__legend-label { color: var(--ditto-grey); }
+
+  &__dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 9999px;
+
+    &--yours { background: var(--brand-secondary); }
+    &--collab { background: var(--success); }
+    &--pending { background: $color-amber-500; }
+    &--unclaimed { background: var(--warning); }
+  }
+
+  /* RLS banner */
+  &__rls-banner {
+    background: var(--rls-card);
+    border-radius: $radius-card;
+    padding: 1rem;
+    border: 1px solid var(--rls-border);
+  }
+
+  &__rls-banner-text {
+    font-size: $text-sm;
+    color: var(--rls-text-secondary);
+    font-family: $font-satoshi;
+  }
+
+  /* Empty state */
+  &__empty {
+    border-radius: 1rem;
+    border: 2px dashed var(--faded-grey);
+    padding: 2rem;
+    text-align: center;
+    background: #fff;
+
+    &--rls {
+      background: var(--rls-card);
+      border-color: var(--rls-border);
+    }
+  }
+
+  &__empty-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    background: rgba($color-ditto-purple, 0.1);
+
+    &--rls { background: rgba($color-rls-accent, 0.1); }
+  }
+
+  &__empty-title {
+    font-size: $text-body;
+    font-weight: 600;
+    font-family: $font-satoshi;
+    margin-bottom: 0.5rem;
+    color: var(--blue);
+
+    &--rls { color: var(--rls-text); }
+  }
+
+  &__empty-desc {
+    font-size: $text-sm;
+    font-family: $font-satoshi;
+    margin-bottom: 1rem;
+    max-width: 24rem;
+    margin-left: auto;
+    margin-right: auto;
+    color: var(--ditto-grey);
+
+    &--rls { color: var(--rls-text-secondary); }
+  }
+}
+</style>

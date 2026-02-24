@@ -4,8 +4,8 @@
     height="12"
     viewBox="0 0 12 12"
     fill="none"
-    :class="{ 'rotate-180': rotated }"
-    class="shrink-0 transition-transform"
+    class="chevron-icon"
+    :class="{ 'chevron-icon--rotated': rotated }"
   >
     <path d="M3 4.5L6 7.5L9 4.5" stroke="#626984" stroke-width="1.5" />
   </svg>
@@ -16,3 +16,14 @@ defineProps<{
   rotated?: boolean
 }>()
 </script>
+
+<style lang="scss" scoped>
+.chevron-icon {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+
+  &--rotated {
+    transform: rotate(180deg);
+  }
+}
+</style>

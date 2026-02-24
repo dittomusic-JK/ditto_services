@@ -1,67 +1,42 @@
 <template>
-  <div class="bg-lighter-grey rounded-2xl p-3 sm:p-4">
-    <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-      <!-- Top row on mobile: artwork + info + progress -->
-      <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-        <!-- Album artwork -->
-        <img
-          :src="artwork"
-          :alt="title"
-          class="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover shrink-0"
-        />
+  <div class="rh">
+    <div class="rh__row">
+      <div class="rh__left">
+        <img :src="artwork" :alt="title" class="rh__artwork" />
 
-        <!-- Release info -->
-        <div class="flex-1 min-w-0">
-          <h2 class="text-base sm:text-lg font-bold text-ditto-blue font-poppins truncate">
-            {{ title }}
-          </h2>
-          <p class="text-xs text-ditto-grey font-satoshi truncate">
-            {{ accountHolder }}
-          </p>
+        <div class="rh__info">
+          <h2 class="rh__title">{{ title }}</h2>
+          <p class="rh__subtitle">{{ accountHolder }}</p>
         </div>
 
-        <!-- Progress indicator -->
-        <div v-if="totalTracks > 0" class="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div class="text-right">
-            <p class="text-lg sm:text-2xl font-bold text-ditto-blue font-poppins">
-              {{ tracksWithSplits }}<span class="text-ditto-grey font-normal">/{{ totalTracks }}</span>
+        <div v-if="totalTracks > 0" class="rh__progress">
+          <div class="rh__progress-text">
+            <p class="rh__progress-num">
+              {{ tracksWithSplits }}<span class="rh__progress-total">/{{ totalTracks }}</span>
             </p>
-            <p class="text-[10px] sm:text-xs text-ditto-grey font-satoshi">tracks with splits</p>
+            <p class="rh__progress-label">tracks with splits</p>
           </div>
-          <!-- Mini progress ring (hidden on mobile) -->
-          <svg width="44" height="44" viewBox="0 0 44 44" class="-rotate-90 hidden sm:block">
+          <svg width="44" height="44" viewBox="0 0 44 44" class="rh__ring">
+            <circle cx="22" cy="22" r="18" fill="none" stroke="#EFEFFC" stroke-width="4" />
             <circle
-              cx="22" cy="22" r="18"
-              fill="none"
-              stroke="#EFEFFC"
-              stroke-width="4"
-            />
-            <circle
-              cx="22" cy="22" r="18"
-              fill="none"
-              stroke="#6C5CE7"
-              stroke-width="4"
+              cx="22" cy="22" r="18" fill="none" stroke="#6C5CE7" stroke-width="4"
               stroke-linecap="round"
               :stroke-dasharray="circumference"
               :stroke-dashoffset="progressOffset"
-              class="transition-all duration-500"
+              class="rh__ring-fg"
             />
           </svg>
         </div>
       </div>
     </div>
 
-    <!-- Collapsible info message -->
-    <div 
-      v-if="userType === 'subscription'"
-      class="mt-3 flex items-start gap-2 text-xs text-ditto-grey font-satoshi"
-    >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0 mt-0.5">
+    <div v-if="userType === 'subscription'" class="rh__note">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="rh__note-icon">
         <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
         <path d="M8 7V11M8 5V5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
-      <p class="leading-relaxed">
-        <strong class="text-ditto-blue">Splits apply from confirmation date.</strong> Collaborators receive an email to accept. Until confirmed, all royalties remain yours.
+      <p class="rh__note-body">
+        <strong class="rh__note-bold">Splits apply from confirmation date.</strong> Collaborators receive an email to accept. Until confirmed, all royalties remain yours.
       </p>
     </div>
   </div>
@@ -86,3 +61,144 @@ const progressOffset = computed(() => {
   return circumference * (1 - progress)
 })
 </script>
+
+<style lang="scss" scoped>
+.rh {
+  background: var(--lighter-grey);
+  border-radius: $radius-card;
+  padding: 0.75rem;
+
+  @include sm {
+    padding: 1rem;
+  }
+
+  &__row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    @include sm {
+      flex-direction: row;
+      align-items: center;
+      gap: 1rem;
+    }
+  }
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+
+    @include sm { gap: 1rem; }
+  }
+
+  &__artwork {
+    width: 3rem;
+    height: 3rem;
+    border-radius: $radius-lg;
+    object-fit: cover;
+    flex-shrink: 0;
+
+    @include sm {
+      width: 4rem;
+      height: 4rem;
+    }
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: $text-body;
+    font-weight: 700;
+    color: var(--blue);
+    font-family: $font-poppins;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    @include sm { font-size: $text-h4; }
+  }
+
+  &__subtitle {
+    font-size: $text-xs;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__progress {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+
+    @include sm { gap: 0.75rem; }
+  }
+
+  &__progress-text { text-align: right; }
+
+  &__progress-num {
+    font-size: $text-h4;
+    font-weight: 700;
+    color: var(--blue);
+    font-family: $font-poppins;
+
+    @include sm { font-size: $text-h2; }
+  }
+
+  &__progress-total {
+    color: var(--ditto-grey);
+    font-weight: 400;
+  }
+
+  &__progress-label {
+    font-size: 10px;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+
+    @include sm { font-size: $text-xs; }
+  }
+
+  &__ring {
+    transform: rotate(-90deg);
+    display: none;
+
+    @include sm { display: block; }
+  }
+
+  &__ring-fg {
+    transition: all 0.5s ease;
+  }
+
+  /* ---- Info note ---- */
+  &__note {
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: $text-xs;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+  }
+
+  &__note-icon {
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  &__note-body {
+    line-height: 1.625;
+  }
+
+  &__note-bold {
+    color: var(--blue);
+  }
+}
+</style>

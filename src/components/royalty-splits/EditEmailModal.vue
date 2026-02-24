@@ -1,94 +1,44 @@
 <template>
   <Teleport to="body">
-    <div
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
-      @click="$emit('close')"
-    >
-      <div
-        class="bg-white rounded-2xl w-full sm:w-[480px] max-w-[95vw] max-h-[90vh] shadow-xl mx-2 sm:mx-0 flex flex-col"
-        @click.stop
-      >
-        <!-- Header -->
-        <div class="p-4 sm:p-6 pb-0 shrink-0">
-          <h2 class="text-lg sm:text-xl font-bold text-ditto-blue font-poppins mb-2">
-            Edit Email
-          </h2>
-          
-          <p class="text-sm text-ditto-grey font-satoshi mb-4">
-            Update the email for <strong class="text-ditto-blue">{{ collaboratorName }}</strong>
-          </p>
-          
-          <!-- New email input -->
-          <div class="mb-4">
-            <label class="block text-xs text-ditto-grey mb-1 font-satoshi">New email address</label>
-            <input
-              v-model="newEmail"
-              type="email"
-              :placeholder="currentEmail"
-              class="w-full px-4 py-2.5 border border-faded-grey rounded-xl text-sm text-ditto-blue font-satoshi focus:border-brand-secondary focus:outline-none"
-              @keydown.enter="handleConfirm"
-            />
-            <p v-if="emailError" class="text-xs text-error font-satoshi mt-1">{{ emailError }}</p>
+    <div class="eem-overlay" @click="$emit('close')">
+      <div class="eem" @click.stop>
+        <div class="eem__head">
+          <h2 class="eem__title">Edit Email</h2>
+          <p class="eem__desc">Update the email for <strong class="eem__strong">{{ collaboratorName }}</strong></p>
+
+          <div class="eem__field">
+            <label class="eem__label">New email address</label>
+            <input v-model="newEmail" type="email" :placeholder="currentEmail" class="eem__input" @keydown.enter="handleConfirm" />
+            <p v-if="emailError" class="eem__error">{{ emailError }}</p>
           </div>
 
-          <!-- Track selection header -->
-          <div class="flex items-center justify-between mb-3">
-            <p class="text-sm font-semibold text-ditto-blue font-satoshi">
-              Update on these tracks:
-            </p>
-            <button 
-              @click="toggleSelectAll"
-              class="text-xs font-medium text-brand-secondary hover:underline font-satoshi"
-            >
-              {{ allSelected ? 'Deselect all' : 'Select all' }}
-            </button>
+          <div class="eem__sel-header">
+            <p class="eem__sel-label">Update on these tracks:</p>
+            <button @click="toggleSelectAll" class="eem__sel-toggle">{{ allSelected ? 'Deselect all' : 'Select all' }}</button>
           </div>
         </div>
 
-        <!-- Scrollable track list -->
-        <div class="flex-1 overflow-y-auto px-4 sm:px-6 min-h-0">
-          <div class="flex flex-wrap gap-2 pb-4">
+        <div class="eem__body">
+          <div class="eem__chips">
             <button
               v-for="track in tracksWithCollaborator"
               :key="track.trackId"
               @click="toggleTrack(track.trackId)"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium font-satoshi cursor-pointer transition-all border"
-              :class="selectedTracks.has(track.trackId) 
-                ? 'border-brand-secondary bg-brand-secondary/10 text-brand-secondary' 
-                : 'border-faded-grey bg-light-grey text-ditto-grey hover:border-brand-secondary/50'"
+              class="eem__chip" :class="{ 'eem__chip--sel': selectedTracks.has(track.trackId) }"
             >
-              <!-- Small checkmark when selected -->
-              <svg 
-                v-if="selectedTracks.has(track.trackId)" 
-                width="12" height="12" viewBox="0 0 24 24" fill="none"
-                class="shrink-0"
-              >
+              <svg v-if="selectedTracks.has(track.trackId)" width="12" height="12" viewBox="0 0 24 24" fill="none" class="eem__chip-check">
                 <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
-              
-              <!-- Track number + name -->
-              <span class="text-xs opacity-60">{{ track.trackNumber }}.</span>
-              <span class="truncate max-w-[140px] sm:max-w-[180px]">{{ track.trackName }}</span>
+              <span class="eem__chip-num">{{ track.trackNumber }}.</span>
+              <span class="eem__chip-name">{{ track.trackName }}</span>
             </button>
           </div>
         </div>
 
-        <!-- Footer with actions -->
-        <div class="p-4 sm:p-6 pt-3 border-t border-faded-grey shrink-0 bg-white rounded-b-2xl">
-          <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
-            <button
-              @click="$emit('close')"
-              class="px-6 py-2.5 border border-faded-grey rounded-full text-sm font-semibold text-ditto-grey font-satoshi hover:border-ditto-blue hover:text-ditto-blue transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              @click="handleConfirm"
-              :disabled="!canConfirm"
-              class="px-6 py-2.5 bg-ditto-blue text-white rounded-full text-sm font-semibold font-satoshi transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-ditto-blue/90"
-            >
-              Update Email
-            </button>
+        <div class="eem__foot">
+          <div class="eem__foot-row">
+            <button @click="$emit('close')" class="eem__btn-cancel">Cancel</button>
+            <button @click="handleConfirm" :disabled="!canConfirm" class="eem__btn-confirm">Update Email</button>
           </div>
         </div>
       </div>
@@ -167,3 +117,199 @@ const handleConfirm = () => {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.eem-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.eem {
+  background: #fff;
+  border-radius: $radius-card;
+  width: 100%;
+  max-width: 95vw;
+  max-height: 90vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  margin: 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+
+  @include sm { width: 480px; margin: 0; }
+
+  &__head {
+    padding: 1rem;
+    padding-bottom: 0;
+    flex-shrink: 0;
+    @include sm { padding: 1.5rem; padding-bottom: 0; }
+  }
+
+  &__title {
+    font-size: $text-h4;
+    font-weight: 700;
+    color: var(--blue);
+    font-family: $font-poppins;
+    margin-bottom: 0.5rem;
+    @include sm { font-size: $text-h3; }
+  }
+
+  &__desc {
+    font-size: $text-sm;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+    margin-bottom: 1rem;
+  }
+
+  &__strong { color: var(--blue); }
+
+  &__field { margin-bottom: 1rem; }
+
+  &__label {
+    display: block;
+    font-size: $text-xs;
+    color: var(--ditto-grey);
+    margin-bottom: 0.25rem;
+    font-family: $font-satoshi;
+  }
+
+  &__input {
+    width: 100%;
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--faded-grey);
+    border-radius: $radius-card;
+    font-size: $text-sm;
+    color: var(--blue);
+    font-family: $font-satoshi;
+
+    &:focus {
+      border-color: var(--brand-secondary);
+      outline: none;
+    }
+  }
+
+  &__error {
+    font-size: $text-xs;
+    color: var(--error);
+    font-family: $font-satoshi;
+    margin-top: 0.25rem;
+  }
+
+  &__sel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  &__sel-label {
+    font-size: $text-sm;
+    font-weight: 600;
+    color: var(--blue);
+    font-family: $font-satoshi;
+  }
+
+  &__sel-toggle {
+    font-size: $text-xs;
+    font-weight: 500;
+    color: var(--brand-secondary);
+    font-family: $font-satoshi;
+    &:hover { text-decoration: underline; }
+  }
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 1rem;
+    min-height: 0;
+    @include sm { padding: 0 1.5rem; }
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 1rem;
+  }
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: $radius-lg;
+    font-size: $text-sm;
+    font-weight: 500;
+    font-family: $font-satoshi;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid var(--faded-grey);
+    background: var(--light-grey);
+    color: var(--ditto-grey);
+
+    &:hover { border-color: rgba($color-brand-secondary, 0.5); }
+
+    &--sel {
+      border-color: var(--brand-secondary);
+      background: rgba($color-brand-secondary, 0.1);
+      color: var(--brand-secondary);
+    }
+  }
+
+  &__chip-check { flex-shrink: 0; }
+  &__chip-num { font-size: $text-xs; opacity: 0.6; }
+  &__chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 140px;
+    @include sm { max-width: 180px; }
+  }
+
+  &__foot {
+    padding: 0.75rem 1rem 1rem;
+    border-top: 1px solid var(--faded-grey);
+    flex-shrink: 0;
+    background: #fff;
+    border-radius: 0 0 $radius-card $radius-card;
+    @include sm { padding: 0.75rem 1.5rem 1.5rem; }
+  }
+
+  &__foot-row {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    @include sm { flex-direction: row; gap: 0.75rem; }
+  }
+
+  &__btn-cancel {
+    padding: 0.625rem 1.5rem;
+    border: 1px solid var(--faded-grey);
+    border-radius: $radius-button;
+    font-size: $text-sm;
+    font-weight: 600;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+    transition: border-color 0.15s, color 0.15s;
+    &:hover { border-color: var(--blue); color: var(--blue); }
+  }
+
+  &__btn-confirm {
+    padding: 0.625rem 1.5rem;
+    background: var(--blue);
+    color: #fff;
+    border-radius: $radius-button;
+    font-size: $text-sm;
+    font-weight: 600;
+    font-family: $font-satoshi;
+    transition: background 0.15s;
+    &:hover { background: rgba($color-text-fill, 0.9); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+}
+</style>

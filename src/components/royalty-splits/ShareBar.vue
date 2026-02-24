@@ -1,22 +1,15 @@
 <template>
-  <div class="flex items-center gap-2">
-    <!-- Percentage text on left -->
-    <span class="text-sm font-semibold text-ditto-purple font-satoshi whitespace-nowrap">
-      {{ userShare }}%
-    </span>
-    <!-- Bar visualization -->
-    <div class="flex h-2 w-20 rounded-full overflow-hidden bg-light-grey">
+  <div class="share-bar">
+    <span class="share-bar__pct">{{ userShare }}%</span>
+    <div class="share-bar__track">
       <div
         v-for="(segment, index) in segments"
         :key="index"
-        class="h-full transition-all"
+        class="share-bar__segment"
         :style="{ width: `${segment.percentage}%`, backgroundColor: segment.color }"
       />
     </div>
-    <!-- Pending percentage on right if present -->
-    <span v-if="pendingShare > 0" class="text-sm font-semibold text-amber-500 font-satoshi whitespace-nowrap">
-      {{ pendingShare }}%
-    </span>
+    <span v-if="pendingShare > 0" class="share-bar__pending">{{ pendingShare }}%</span>
   </div>
 </template>
 
@@ -35,3 +28,41 @@ withDefaults(defineProps<{
   pendingShare: 0
 })
 </script>
+
+<style lang="scss" scoped>
+.share-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &__pct {
+    font-size: $text-sm;
+    font-weight: 600;
+    color: var(--purple);
+    font-family: $font-satoshi;
+    white-space: nowrap;
+  }
+
+  &__track {
+    display: flex;
+    height: 0.5rem;
+    width: 5rem;
+    border-radius: $radius-button;
+    overflow: hidden;
+    background: var(--light-grey);
+  }
+
+  &__segment {
+    height: 100%;
+    transition: all 0.15s ease;
+  }
+
+  &__pending {
+    font-size: $text-sm;
+    font-weight: 600;
+    color: $color-amber-500;
+    font-family: $font-satoshi;
+    white-space: nowrap;
+  }
+}
+</style>

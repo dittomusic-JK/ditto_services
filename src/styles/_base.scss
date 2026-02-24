@@ -1,4 +1,6 @@
-/* Satoshi Font */
+@use 'variables' as *;
+
+/* Font faces */
 @font-face {
   font-family: 'Satoshi';
   src: url('/fonts/Satoshi-Variable.woff2') format('woff2');
@@ -31,30 +33,8 @@
   font-display: swap;
 }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  button,
-  input,
-  select,
-  textarea {
-    @apply appearance-none bg-transparent border-0 outline-none;
-  }
-}
-
-@tailwind components;
-@tailwind utilities;
-
-@layer components {
-  .all-\[unset\] {
-    all: unset;
-  }
-}
-
 :root {
-  /* Ditto Framework Colors */
+  /* Brand Colors */
   --pink: #ff006e;
   --mint: #12c1ae;
   --blue: #101f3c;
@@ -62,6 +42,7 @@
   --dark-indigo: #080727;
   --indigo: #3a1bb9;
   --light-indigo: #5f1fff;
+  --red: #ec0515;
   --soft-red: #d92121;
   --purple: #8640f4;
   --light-purple: #d9c1ff;
@@ -70,6 +51,8 @@
   --ditto-starter: #955fff;
   --ditto-pro: #0f9;
   --ditto-label: #f6c443;
+
+  /* Greyscale */
   --white: #fff;
   --darker-grey: #44444c;
   --dark-grey: #9595a7;
@@ -78,6 +61,8 @@
   --medium-grey: #dddde7;
   --light-grey: #efeffc;
   --lighter-grey: #f9f9ff;
+
+  /* Status */
   --error: #ee404c;
   --warning: #ffb100;
   --success: #00e785;
@@ -87,25 +72,90 @@
   /* Typography */
   --brand-font-body: "Satoshi", Helvetica, Arial, sans-serif;
   --brand-font-heading: "Poppins", Helvetica, Arial, sans-serif;
-  --brand-body: #111;
+
+  /* Brand Theme */
+  --brand-body: #101f3c;
   --brand-body-light: #626984;
   --brand-border: #d2d2e3;
   --brand-inactive: #aac;
   --brand-primary: #6c5ce7;
+  --brand-primary-hover: rgb(149.6428571429, 107.5, 255);
+  --brand-primary-active: #8640f4;
   --brand-secondary: #287ef7;
+  --brand-secondary-hover: #559cff;
+  --brand-secondary-active: #285bf7;
 
-  /* Button styling */
+  /* Dark Theme Backgrounds */
+  --dark-brand-bg: #2c2c31;
+  --dark-brand-bg-darker: #1f1f1f;
+  --dark-brand-bg-lighter: #313135;
+
+  /* Buttons */
   --button-border-radius: 2rem;
   --button-border-size: 2px;
+  --button-grey: #f2f2fd;
+  --primary-button-colour: var(--brand-primary);
+  --primary-button-hover: var(--brand-primary-hover);
+  --primary-button-active: var(--brand-primary-active);
+  --secondary-button-colour: var(--brand-primary);
+  --secondary-button-hover: var(--brand-primary-hover);
+  --secondary-button-active: var(--brand-primary-active);
+  --secondary-button-background: transparent;
+  --tertiary-button-colour: var(--brand-secondary);
+  --tertiary-button-hover: var(--brand-secondary-hover);
+  --tertiary-button-active: var(--brand-secondary-active);
+  --text-button-colour: var(--brand-primary);
+  --text-button-hover: var(--brand-primary-hover);
+  --text-button-active: var(--purple);
 
-  /* Input styling */
-  --input-color: #101f3c;
-  --input-border-color: #d2d2e3;
-  --input-disabled-bg: #f9f9ff;
-  --input-disabled-color: #d2d2e3;
-  --label-color: #101f3c;
+  /* Form Inputs */
+  --input-font-size: 18px;
+  --input-color: var(--blue);
+  --input-border-color: var(--brand-border);
+  --input-placeholder-color: #b1b1c3;
+  --input-disabled-bg: var(--lighter-grey);
+  --input-disabled-color: var(--brand-border);
+  --input-disabled-border-color: var(--brand-border);
+  --input-margin: 1.5rem;
+  --input-padding: 1.5rem;
+  --text-input-padding: calc(var(--input-padding) - 2px);
 
-  /* Legacy Anima tokens (mapped to framework) */
+  /* Labels */
+  --label-color: var(--brand-body-light);
+  --label-disabled-color: var(--input-disabled-color);
+
+  /* Dropdowns */
+  --dropdown-link-bg: white;
+  --dropdown-link-color: var(--ditto-grey);
+  --dropdown-link-hover-color: var(--brand-primary);
+  --dropdown-text-color: var(--blue);
+
+  /* Tables */
+  --table-header-color: #7e7e7e;
+  --table-body-color: var(--darker-grey);
+
+  /* Toggles */
+  --toggle-bg: #e9e9eb;
+  --toggle-bg-checked: var(--success);
+  --toggle-color: #fff;
+  --toggle-disabled-bg: var(--toggle-bg);
+  --toggle-disabled-bg-checked: var(--input-disabled-color);
+  --toggle-disabled-color: var(--input-disabled-bg);
+  --toggle-disabled-label-color: var(--input-disabled-color);
+
+  /* Navigation */
+  --navTopPos: 4rem;
+  --navbar-collapse-breakpoint: 990px;
+
+  /* Layout */
+  --gutter: 30px;
+
+  /* Animation */
+  --animate-spin: spin 1s linear infinite;
+}
+
+/* Legacy Anima tokens (mapped to framework) */
+:root {
   --ditto-colors-light-dark-active-green: rgba(0, 211, 70, 1);
   --ditto-colors-light-dark-ditto-background-white: rgba(255, 255, 255, 1);
   --ditto-colors-light-dark-ditto-border-grey: rgba(210, 210, 227, 1);
@@ -124,18 +174,7 @@
   --ditto-colors-light-dark-ditto-text-prompt: rgba(177, 177, 195, 1);
 }
 
-/*
-
-To enable a theme in your HTML, simply add one of the following data attributes to an HTML element, like so:
-
-<body data-ditto-colors-light-dark-mode="light">
-    <!-- the rest of your content -->
-</body>
-
-You can apply the theme on any DOM node, not just the `body`
-
-*/
-
+/* Theme overrides */
 [data-ditto-colors-light-dark-mode="light"] {
   --ditto-colors-light-dark-ditto-background-white: rgba(255, 255, 255, 1);
   --ditto-colors-light-dark-ditto-border-grey: rgba(210, 210, 227, 1);
@@ -175,29 +214,22 @@ You can apply the theme on any DOM node, not just the `body`
   --ditto-colors-light-dark-ditto-text-fill: rgba(255, 255, 255, 1);
 }
 
-/* RLS (Label Services) Dark Theme - Brand Guide Colors */
+/* RLS (Label Services) Dark Theme */
 [data-ditto-theme="rls"] {
-  /* Backgrounds */
-  --rls-bg: #1f1f1f;           /* Ash Silver */
-  --rls-bg-elevated: #2a2a2c;  /* Silk Stone */
-  --rls-card: #313135;         /* Stone */
-  
-  /* Text */
-  --rls-text: #ffffff;         /* Smoke Haze */
-  --rls-text-secondary: #aaaacc; /* Subtle Plum */
-  --rls-text-muted: #626984;   /* Ditto Grey */
-  
-  /* Accents */
-  --rls-accent: #9e77ff;       /* Mauve Linen - primary purple */
-  --rls-highlight: #ffb100;    /* Cosmic Coral - orange/gold */
-  --rls-success: #00ff99;      /* Aqua Bronze - bright green */
-  --rls-error: #ef4444;        /* Dawn Frost - red */
-  --rls-info: #6aaeff;         /* Marine Lilac - light blue */
-  
-  /* Borders */
-  --rls-border: #313135;       /* Stone */
-  --rls-border-light: #44444c; /* Darker Grey */
-  
+  --rls-bg: #1f1f1f;
+  --rls-bg-elevated: #2a2a2c;
+  --rls-card: #313135;
+  --rls-text: #ffffff;
+  --rls-text-secondary: #aaaacc;
+  --rls-text-muted: #626984;
+  --rls-accent: #9e77ff;
+  --rls-highlight: #ffb100;
+  --rls-success: #00ff99;
+  --rls-error: #ef4444;
+  --rls-info: #6aaeff;
+  --rls-border: #313135;
+  --rls-border-light: #44444c;
+
   /* Override framework variables for RLS theme */
   --blue: #ffffff;
   --ditto-grey: #aaaacc;
@@ -212,109 +244,121 @@ You can apply the theme on any DOM node, not just the `body`
   --medium-grey: #44444c;
 }
 
-:root {
-  --animate-spin: spin 1s linear infinite;
+/* Base resets (replaces Tailwind preflight) */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.animate-fade-in {
-  animation: fade-in 1s var(--animation-delay, 0s) ease forwards;
+html {
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -moz-tab-size: 4;
+  tab-size: 4;
+  font-family: $font-satoshi;
 }
 
-.animate-fade-up {
-  animation: fade-up 1s var(--animation-delay, 0s) ease forwards;
+body {
+  font-family: inherit;
+  line-height: inherit;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
-.animate-marquee {
-  animation: marquee var(--duration) infinite linear;
+hr {
+  height: 0;
+  color: inherit;
+  border: 0;
+  border-top: 1px solid;
 }
 
-.animate-marquee-vertical {
-  animation: marquee-vertical var(--duration) linear infinite;
+a {
+  color: inherit;
+  text-decoration: inherit;
 }
 
-.animate-shimmer {
-  animation: shimmer 8s infinite;
+b, strong {
+  font-weight: bolder;
 }
 
-.animate-spin {
-  animation: var(--animate-spin);
+small {
+  font-size: 80%;
 }
 
+button, input, optgroup, select, textarea {
+  font-family: inherit;
+  font-feature-settings: inherit;
+  font-variation-settings: inherit;
+  font-size: 100%;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+button, [role="button"] {
+  cursor: pointer;
+}
+
+:disabled {
+  cursor: default;
+}
+
+ol, ul, menu {
+  list-style: none;
+}
+
+img, svg, video, canvas, audio, iframe, embed, object {
+  display: block;
+  vertical-align: middle;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
+}
+
+[hidden] {
+  display: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+table {
+  text-indent: 0;
+  border-color: inherit;
+  border-collapse: collapse;
+}
+
+/* Animations */
 @keyframes spin {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-@keyframes image-glow {
-  0% {
-    opacity: 0;
-    animation-timing-function: cubic-bezier(0.74, 0.25, 0.76, 1);
-  }
-
-  10% {
-    opacity: 0.7;
-    animation-timing-function: cubic-bezier(0.12, 0.01, 0.08, 0.99);
-  }
-
-  to {
-    opacity: 0.4;
-  }
+  to { transform: rotate(1turn); }
 }
 
 @keyframes fade-in {
-  0% {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  0% { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes fade-up {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  0% { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes shimmer {
-  0%,
-  90%,
-  to {
-    background-position: calc(-100% - var(--shimmer-width)) 0;
-  }
-
-  30%,
-  60% {
-    background-position: calc(100% + var(--shimmer-width)) 0;
-  }
+  0%, 90%, to { background-position: calc(-100% - var(--shimmer-width)) 0; }
+  30%, 60% { background-position: calc(100% + var(--shimmer-width)) 0; }
 }
 
-@keyframes marquee {
-  0% {
-    transform: translate(0);
-  }
-
-  to {
-    transform: translateX(calc(-100% - var(--gap)));
-  }
-}
-
-@keyframes marquee-vertical {
-  0% {
-    transform: translateY(0);
-  }
-
-  to {
-    transform: translateY(calc(-100% - var(--gap)));
-  }
-}
+.animate-fade-in { animation: fade-in 1s var(--animation-delay, 0s) ease forwards; }
+.animate-fade-up { animation: fade-up 1s var(--animation-delay, 0s) ease forwards; }
+.animate-spin { animation: var(--animate-spin); }

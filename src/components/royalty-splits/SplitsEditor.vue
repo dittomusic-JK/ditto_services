@@ -1,47 +1,42 @@
 <template>
-  <div 
+  <div
     ref="containerRef"
-    class="border-t border-b-2 px-3 sm:px-6 py-4 rounded-b-xl focus:outline-none"
-    :class="isRLS ? 'bg-rls-bg-elevated border-rls-border' : 'bg-lighter-grey border-faded-grey'"
+    class="se"
+    :class="{ 'se--rls': isRLS }"
     tabindex="-1"
     @keydown.escape.prevent="$emit('close')"
     @keydown.enter.ctrl.prevent="handleSave"
     @keydown.enter.meta.prevent="handleSave"
   >
     <!-- User's split summary -->
-    <div class="flex items-center gap-3 sm:gap-4 pb-4 border-b" :class="isRLS ? 'border-rls-border' : 'border-faded-grey'">
+    <div class="se__summary" :class="{ 'se__summary--rls': isRLS }">
       <div>
-        <span class="text-xs font-satoshi" :class="isRLS ? 'text-rls-text-secondary' : 'text-ditto-grey'">Your Split:</span>
-        <div class="flex items-center gap-1.5">
-          <!-- Show current user share based on staged splits -->
-          <p class="text-sm font-bold font-satoshi" :class="isRLS ? 'text-rls-accent' : 'text-brand-secondary'">{{ currentUserShare }}%</p>
-          <!-- Show pending indicator if there are unsaved changes -->
-          <template v-if="hasUnsavedChanges && !isRLS">
-            <span class="text-ditto-grey">→</span>
-            <p class="text-sm font-bold text-amber-500 font-satoshi">{{ currentUserShare }}%</p>
-            <span class="text-[10px] text-amber-500 font-satoshi">(unsaved)</span>
+        <span class="se__summary-label" :class="{ 'se__summary-label--rls': isRLS }">Your Split:</span>
+        <div class="se__summary-row">
+          <p class="se__summary-val" :class="{ 'se__summary-val--rls': isRLS }">{{ activeUserShare }}%</p>
+          <template v-if="hasPendingChanges && !isRLS && activeUserShare !== currentUserShare">
+            <span class="se__summary-sep">&gt;</span>
+            <p class="se__summary-pending">{{ currentUserShare }}%</p>
+            <span class="se__summary-pending-tag">Pending</span>
           </template>
         </div>
       </div>
     </div>
 
     <!-- Splits section header -->
-    <div class="flex items-center justify-between py-4">
-      <h4 class="text-base font-bold font-poppins" :class="isRLS ? 'text-rls-text' : 'text-ditto-blue'">
+    <div class="se__header">
+      <h4 class="se__title" :class="{ 'se__title--rls': isRLS }">
         Splits{{ visibleSplits.length > 0 ? ` (${visibleSplits.length})` : '' }}
       </h4>
-      <button
-        @click="handleClose"
-        class="p-1 transition-colors" :class="isRLS ? 'text-rls-text-secondary hover:text-rls-text' : 'text-ditto-grey hover:text-ditto-blue'"
-      >
+      <button @click="handleClose" class="se__close-btn" :class="{ 'se__close-btn--rls': isRLS }">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
     </div>
 
-    <!-- All splits - existing (read-only) and new (editable) -->
-    <div v-if="visibleSplits.length > 0" class="divide-y" :class="isRLS ? 'divide-rls-border' : 'divide-faded-grey'">
+    <!-- All splits -->
+    <div v-if="visibleSplits.length > 0" class="se__rows" :class="{ 'se__rows--rls': isRLS }">
       <SplitRow
         v-for="(split, index) in visibleSplits"
         :key="split.id"
@@ -54,7 +49,7 @@
         :original-share="split.originalShare"
         :has-account="split.hasAccount"
         :share-index="index + 1"
-        :is-editable="split.isNew || false"
+        :is-editable="(split.isNew && !split.isCommitted) || false"
         :is-new="split.isNew"
         :is-deleted="split.isDeleted"
         :known-collaborators="availableCollaborators"
@@ -63,16 +58,14 @@
         @update="(data) => handleSplitUpdate(split.id, data)"
         @remove="handleRemoveSplit(split.id)"
         @resend="$emit('resend-confirmation', split.id)"
+        @commit="handleCommitSplit(split.id)"
+        @re-edit="handleReEditSplit(split.id)"
       />
     </div>
 
     <!-- Add new split button -->
-    <div class="border-t pt-4" :class="isRLS ? 'border-rls-border' : 'border-faded-grey'">
-      <button
-        @click="addNewSplitRow"
-        class="flex items-center gap-2 px-4 py-2 border rounded-full text-sm font-medium font-satoshi transition-colors"
-        :class="isRLS ? 'border-rls-border text-rls-text-secondary hover:border-rls-accent hover:text-rls-accent' : 'border-faded-grey text-ditto-grey hover:border-brand-secondary hover:text-brand-secondary'"
-      >
+    <div class="se__add-section" :class="{ 'se__add-section--rls': isRLS }">
+      <button @click="addNewSplitRow" class="se__pill-btn" :class="{ 'se__pill-btn--rls': isRLS }">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M8 3.33334V12.6667M3.33333 8H12.6667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -81,14 +74,12 @@
     </div>
 
     <!-- Action buttons -->
-    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t mt-4" :class="isRLS ? 'border-rls-border' : 'border-faded-grey'">
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-        <!-- Copy Splits button (opens modal directly) -->
+    <div class="se__bar" :class="{ 'se__bar--rls': isRLS }">
+      <div class="se__bar-left">
         <button
           v-if="otherTracks.length > 0"
           @click="$emit('open-copy-modal')"
-          class="flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto px-4 py-2 border rounded-full text-sm font-medium font-satoshi transition-colors"
-          :class="isRLS ? 'border-rls-border text-rls-text-secondary hover:border-rls-accent hover:text-rls-accent' : 'border-faded-grey text-ditto-grey hover:border-brand-secondary hover:text-brand-secondary'"
+          class="se__pill-btn se__pill-btn--full-mob" :class="{ 'se__pill-btn--rls': isRLS }"
         >
           <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
             <path d="M15 6H8.25C7.42 6 6.75 6.67 6.75 7.5V14.25C6.75 15.08 7.42 15.75 8.25 15.75H15C15.83 15.75 16.5 15.08 16.5 14.25V7.5C16.5 6.67 15.83 6 15 6Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -98,22 +89,16 @@
         </button>
       </div>
 
-      <!-- Save button with tooltip for validation errors -->
-      <div class="relative group">
-        <button
-          @click="handleSave"
-          :disabled="!canSave"
-          class="flex items-center justify-center gap-2 px-6 py-2 border border-brand-secondary rounded-full text-sm font-semibold text-brand-secondary font-satoshi hover:bg-brand-secondary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+      <div class="se__save-wrap">
+        <button @click="handleSave" :disabled="!canSave" class="se__save-btn">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M13.333 5.333L6 12.667 2.667 9.333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Save Splits
         </button>
-        <!-- Validation tooltip -->
-        <div v-if="sharesExceed100" class="absolute bottom-full right-0 mb-2 px-3 py-2 bg-ditto-blue text-white text-xs rounded-lg w-48 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
-          Total shares cannot exceed 100%. Adjust the splits before saving.
-          <div class="absolute top-full right-6 border-4 border-transparent border-t-ditto-blue" />
+        <div v-if="sharesExceed100" class="se__save-tip">
+          Total splits cannot exceed 100%. Adjust the splits before saving.
+          <div class="se__save-tip-arrow" />
         </div>
       </div>
     </div>
@@ -137,6 +122,7 @@ interface StagedSplit {
   isNew?: boolean // New split not yet saved
   isEdited?: boolean // Existing split that has been edited
   isDeleted?: boolean // Marked for deletion
+  isCommitted?: boolean // New split visually locked-in but not yet saved to DB
 }
 
 const props = defineProps<{
@@ -147,6 +133,7 @@ const props = defineProps<{
   hasChanges?: boolean
   knownCollaborators?: { name: string; email: string }[]
   isRLS?: boolean
+  saveRequested?: number
 }>()
 
 // Local staged state - starts as a copy of existing splits
@@ -244,6 +231,13 @@ watch(hasUnsavedChanges, (isDirty) => {
   emit('dirty-change', isDirty)
 })
 
+// Watch for external save requests (e.g. from unsaved changes modal)
+watch(() => props.saveRequested, () => {
+  if (canSave.value) {
+    handleSave()
+  }
+})
+
 // Get emails already in splits (including staged, excluding deleted)
 const existingEmails = computed(() => {
   const emails = stagedSplits.value
@@ -281,6 +275,34 @@ const handleSplitUpdate = (id: string, data: { name: string; email: string; shar
     // Mark as edited if it's not a new split
     if (!split.isNew) {
       split.isEdited = true
+    }
+  }
+}
+
+// Commit a new split — visually lock it in as pending
+const handleCommitSplit = (id: string) => {
+  const split = stagedSplits.value.find(s => s.id === id)
+  if (split && split.isNew && !split.isCommitted) {
+    split.isCommitted = true
+    split.status = 'pending'
+    // Add a new empty row for the next split
+    addNewSplitRow()
+  }
+}
+
+// Re-edit a committed split (when user clicks Edit icon on a committed new split)
+const handleReEditSplit = (id: string) => {
+  const split = stagedSplits.value.find(s => s.id === id)
+  if (split && split.isNew && split.isCommitted) {
+    split.isCommitted = false
+    split.status = undefined
+    // Remove the empty row that was auto-added when this split was committed
+    // (to avoid duplicate empty rows)
+    const emptyIdx = stagedSplits.value.findIndex(
+      s => s.isNew && !s.isCommitted && s.id !== id && s.name === '' && s.email === '' && s.share === 0
+    )
+    if (emptyIdx > -1) {
+      stagedSplits.value.splice(emptyIdx, 1)
     }
   }
 }
@@ -355,10 +377,235 @@ const visibleSplits = computed(() => stagedSplits.value)
 // Handle close - check for unsaved changes
 const handleClose = () => {
   if (hasUnsavedChanges.value) {
-    // Will be handled by parent's unsaved changes modal
     emit('close')
   } else {
     emit('close')
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.se {
+  padding: 1rem 0.75rem;
+  border-radius: 0 0 $radius-card $radius-card;
+  background: var(--lighter-grey);
+
+  &:focus { outline: none; }
+
+  @include sm { padding: 1rem 1.5rem; }
+
+  &--rls {
+    background: var(--rls-bg-elevated);
+  }
+
+  /* ---- Summary ---- */
+  &__summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+
+    @include sm { gap: 1rem; }
+  }
+
+  &__summary-label {
+    font-size: $text-xs;
+    font-family: $font-satoshi;
+    color: var(--ditto-grey);
+
+    &--rls { color: var(--rls-text-secondary); }
+  }
+
+  &__summary-row {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  &__summary-val {
+    font-size: $text-sm;
+    font-weight: 700;
+    font-family: $font-satoshi;
+    color: var(--brand-secondary);
+
+    &--rls { color: var(--rls-accent); }
+  }
+
+  &__summary-sep {
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+    font-size: $text-sm;
+  }
+
+  &__summary-pending {
+    font-size: $text-sm;
+    font-weight: 700;
+    color: $color-amber-500;
+    font-family: $font-satoshi;
+  }
+
+  &__summary-pending-tag {
+    font-size: 10px;
+    color: $color-amber-500;
+    font-family: $font-satoshi;
+  }
+
+  /* ---- Header ---- */
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+  }
+
+  &__title {
+    font-size: $text-body;
+    font-weight: 700;
+    font-family: $font-poppins;
+    color: var(--blue);
+
+    &--rls { color: var(--rls-text); }
+  }
+
+  &__close-btn {
+    padding: 0.25rem;
+    transition: color 0.15s;
+    color: var(--ditto-grey);
+
+    &:hover { color: var(--blue); }
+    &--rls {
+      color: var(--rls-text-secondary);
+      &:hover { color: var(--rls-text); }
+    }
+  }
+
+  /* ---- Rows divider ---- */
+  &__rows {}
+
+  /* ---- Add section ---- */
+  &__add-section {
+    padding-top: 1rem;
+  }
+
+  /* ---- Bottom bar ---- */
+  &__bar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    margin-top: 1rem;
+
+    @include sm {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  &__bar-left {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+
+    @include sm {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75rem;
+    }
+  }
+
+  /* ---- Pill button (shared) ---- */
+  &__pill-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--faded-grey);
+    border-radius: $radius-button;
+    font-size: $text-sm;
+    font-weight: 500;
+    font-family: $font-satoshi;
+    color: var(--ditto-grey);
+    transition: border-color 0.15s, color 0.15s;
+
+    &:hover {
+      border-color: var(--brand-secondary);
+      color: var(--brand-secondary);
+    }
+
+    &--rls {
+      border-color: var(--rls-border);
+      color: var(--rls-text-secondary);
+
+      &:hover {
+        border-color: var(--rls-accent);
+        color: var(--rls-accent);
+      }
+    }
+
+    &--full-mob {
+      justify-content: center;
+      width: 100%;
+
+      @include sm {
+        justify-content: flex-start;
+        width: auto;
+      }
+    }
+  }
+
+  /* ---- Save ---- */
+  &__save-wrap {
+    position: relative;
+
+    &:hover > .se__save-tip { opacity: 1; }
+  }
+
+  &__save-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    border: 1px solid var(--brand-secondary);
+    border-radius: $radius-button;
+    font-size: $text-sm;
+    font-weight: 600;
+    color: var(--brand-secondary);
+    font-family: $font-satoshi;
+    transition: background 0.15s;
+
+    &:hover { background: rgba($color-brand-secondary, 0.05); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &__save-tip {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--blue);
+    color: #fff;
+    font-size: $text-xs;
+    border-radius: $radius-lg;
+    width: 12rem;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+    z-index: 20;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  &__save-tip-arrow {
+    position: absolute;
+    top: 100%;
+    right: 1.5rem;
+    border: 4px solid transparent;
+    border-top-color: var(--blue);
+  }
+}
+</style>

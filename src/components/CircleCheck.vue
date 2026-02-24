@@ -1,15 +1,11 @@
 <template>
   <div
     @click.stop="onClick"
-    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-[3px] flex items-center justify-center transition-all bg-white"
-    :class="[
-      checked
-        ? 'border-[#2680EB]'
-        : disabled
-        ? 'border-[#D2D2E3]'
-        : 'border-[#D2D2E3] hover:border-[#2680EB]',
-      disabled ? 'opacity-50' : 'cursor-pointer'
-    ]"
+    class="circle-check"
+    :class="{
+      'circle-check--checked': checked,
+      'circle-check--disabled': disabled
+    }"
   >
     <svg v-if="checked" width="20" height="20" viewBox="0 0 24 24" fill="none">
       <path
@@ -39,3 +35,36 @@ const onClick = () => {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.circle-check {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 3px solid var(--faded-grey);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  background: #fff;
+  cursor: pointer;
+
+  @include sm {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  &:hover:not(.circle-check--disabled):not(.circle-check--checked) {
+    border-color: #2680EB;
+  }
+
+  &--checked {
+    border-color: #2680EB;
+  }
+
+  &--disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+</style>

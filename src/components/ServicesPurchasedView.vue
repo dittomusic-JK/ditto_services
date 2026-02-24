@@ -1,8 +1,6 @@
 <template>
-  <div class="w-full max-w-[820px] px-2 sm:px-4 md:px-0 flex flex-col gap-6 md:gap-8">
-    <h1 class="text-2xl font-bold text-[#0e112c] font-['Poppins']">
-      Services
-    </h1>
+  <div class="spv">
+    <h1 class="spv__title">Services</h1>
 
     <!-- Charts Registration Section -->
     <div>
@@ -10,47 +8,17 @@
         title="Charts Registration"
         description="Register your release with official music charts to track your chart positions."
       />
-      <div class="flex flex-col gap-3">
-        <ServiceRow
-          title="Charts Registration UK / Ireland"
-          price="£15"
-          :selected="false"
-          flag-code="gb"
-          status="unavailable"
-          unavailable-tooltip="You've already purchased worldwide chart registration"
-          @toggle="() => {}"
-        >
+      <div class="spv__list">
+        <ServiceRow title="Charts Registration UK / Ireland" price="£15" :selected="false" flag-code="gb" status="unavailable" unavailable-tooltip="You've already purchased worldwide chart registration" @toggle="() => {}">
           <template #icon><ChartsIcon /></template>
         </ServiceRow>
-        <ServiceRow
-          title="Charts Registration US / Canada"
-          price="£15"
-          :selected="false"
-          flag-code="us"
-          status="unavailable"
-          unavailable-tooltip="You've already purchased worldwide chart registration"
-          @toggle="() => {}"
-        >
+        <ServiceRow title="Charts Registration US / Canada" price="£15" :selected="false" flag-code="us" status="unavailable" unavailable-tooltip="You've already purchased worldwide chart registration" @toggle="() => {}">
           <template #icon><ChartsIcon /></template>
         </ServiceRow>
-        <ServiceRow
-          title="Charts Registration Australia"
-          price="£15"
-          :selected="false"
-          flag-code="au"
-          status="unavailable"
-          unavailable-tooltip="You've already purchased worldwide chart registration"
-          @toggle="() => {}"
-        >
+        <ServiceRow title="Charts Registration Australia" price="£15" :selected="false" flag-code="au" status="unavailable" unavailable-tooltip="You've already purchased worldwide chart registration" @toggle="() => {}">
           <template #icon><ChartsIcon /></template>
         </ServiceRow>
-        <ServiceRow
-          title="Charts Registration Worldwide"
-          price="£35"
-          :selected="false"
-          status="active"
-          @toggle="() => {}"
-        >
+        <ServiceRow title="Charts Registration Worldwide" price="£35" :selected="false" status="active" @toggle="() => {}">
           <template #icon><ChartsGlobalIcon /></template>
         </ServiceRow>
       </div>
@@ -62,37 +30,29 @@
         title="Distribution Services"
         description="Expand your release's reach with additional distribution options."
       />
-      <div class="flex flex-col gap-4">
-        <!-- Pre-release Downloads -->
+      <div class="spv__cards">
         <FeatureCard
           title="Pre-release downloads"
           description="Offer pre-orders of your music on iTunes and Amazon, granting fans early access and instant gratification with select tracks."
-          :checked="false"
-          :disabled="true"
+          :checked="false" :disabled="true"
           disabled-message="This release is already live and no longer eligible for a pre-release campaign"
         >
           <template #icon><PreReleaseIcon /></template>
         </FeatureCard>
 
-        <!-- Auto-release -->
         <FeatureCard
           title="Auto-release to new platforms"
-          badge="Purchased"
-          badge-variant="green"
+          badge="Purchased" badge-variant="green"
           description="Automatically send this release to any new platforms we add in the future."
-          :checked="true"
-          :disabled="true"
-          @toggle="() => {}"
+          :checked="true" :disabled="true" @toggle="() => {}"
         >
           <template #icon><AutoReleaseIcon /></template>
         </FeatureCard>
 
-        <!-- Release Protection -->
         <FeatureCard
           title="Release Protection"
           description="Protect your release from unauthorized distribution across all platforms."
-          :checked="releaseProtectionSelected"
-          price="£10"
+          :checked="releaseProtectionSelected" price="£10"
           @toggle="releaseProtectionSelected = !releaseProtectionSelected"
         >
           <template #icon><ReleaseProtectionIcon /></template>
@@ -106,43 +66,33 @@
         title="Advanced Stores"
         description="Distribute to specialist music platforms."
       />
-      <div class="flex flex-col gap-4">
-        <!-- YouTube Content ID -->
+      <div class="spv__cards">
         <FeatureCard
           title="YouTube Content ID & Shorts"
           description="Get notified & paid if your music is used in YouTube videos. Ad revenue goes to you."
-          :checked="youTubeSelected"
-          price="£10"
+          :checked="youTubeSelected" price="£10"
           @toggle="youTubeSelected = !youTubeSelected"
         >
-          <template #icon><img src="/images/YoutubeShorts.svg" alt="YouTube" class="w-8 h-8" /></template>
+          <template #icon><img src="/images/YoutubeShorts.svg" alt="YouTube" class="spv__store-icon" /></template>
         </FeatureCard>
 
-        <!-- Audio Fingerprint -->
         <FeatureCard
           title="Audio Fingerprint Services"
           description="Register your music with audio fingerprinting services for identification and royalty collection."
-          :checked="fingerprintSelected"
-          price="£15"
+          :checked="fingerprintSelected" price="£15"
           @toggle="fingerprintSelected = !fingerprintSelected"
         >
-          <template #icon><img src="/images/audiofingerprint.svg" alt="Audio Fingerprint" class="w-8 h-8" /></template>
+          <template #icon><img src="/images/audiofingerprint.svg" alt="Audio Fingerprint" class="spv__store-icon" /></template>
           
-          <!-- Fingerprint providers -->
-          <div v-if="fingerprintSelected" class="flex flex-wrap gap-2 sm:gap-3 mt-2">
+          <div v-if="fingerprintSelected" class="spv__fp-providers">
             <div
-              v-for="provider in fingerprintProviders"
-              :key="provider.name"
+              v-for="provider in fingerprintProviders" :key="provider.name"
               @click.stop="provider.enabled = !provider.enabled"
-              class="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-white rounded-xl border cursor-pointer transition-all"
-              :class="provider.enabled ? 'border-brand-secondary' : 'border-faded-grey hover:border-brand-secondary'"
+              class="spv__fp-item" :class="{ 'spv__fp-item--on': provider.enabled }"
             >
-              <img :src="provider.icon" :alt="provider.name" class="w-5 h-5 sm:w-6 sm:h-6" />
-              <span class="text-xs sm:text-sm font-medium text-ditto-blue font-satoshi">{{ provider.name }}</span>
-              <div
-                class="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-all bg-white"
-                :class="provider.enabled ? 'border-brand-secondary' : 'border-faded-grey'"
-              >
+              <img :src="provider.icon" :alt="provider.name" class="spv__fp-icon" />
+              <span class="spv__fp-name">{{ provider.name }}</span>
+              <div class="spv__fp-check" :class="{ 'spv__fp-check--on': provider.enabled }">
                 <svg v-if="provider.enabled" width="12" height="12" viewBox="0 0 24 24" fill="none">
                   <path d="M20 6L9 17L4 12" stroke="#287ef7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
@@ -151,26 +101,17 @@
           </div>
         </FeatureCard>
 
-        <!-- Beatport -->
         <FeatureCard
           title="Beatport Distribution"
           description="You need a label set up with Beatport to release your music on this store."
-          :checked="beatportSelected"
-          price="£65"
+          :checked="beatportSelected" price="£65"
           @toggle="beatportSelected = !beatportSelected"
         >
-          <template #icon><img src="/images/beatport.svg" alt="Beatport" class="w-8 h-8" /></template>
+          <template #icon><img src="/images/beatport.svg" alt="Beatport" class="spv__store-icon" /></template>
           
-          <!-- Beatport form fields -->
-          <div
-            v-if="beatportSelected"
-            class="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-3 md:gap-4 mt-2"
-            @click.stop
-          >
+          <div v-if="beatportSelected" class="spv__bp-form" @click.stop>
             <div>
-              <label class="block text-xs text-ditto-grey mb-1 font-satoshi">
-                Beatport Label
-              </label>
+              <label class="spv__field-label">Beatport Label</label>
               <BeatportLabelDropdown
                 v-model="beatportLabel"
                 :options="beatportLabelOptions"
@@ -179,15 +120,11 @@
               />
             </div>
             <div>
-              <label class="block text-xs text-ditto-grey mb-1 font-satoshi">
-                Primary Genre
-              </label>
+              <label class="spv__field-label">Primary Genre</label>
               <CustomDropdown v-model="beatportPrimaryGenre" :options="beatportGenres" />
             </div>
             <div>
-              <label class="block text-xs text-ditto-grey mb-1 font-satoshi">
-                Secondary Genre
-              </label>
+              <label class="spv__field-label">Secondary Genre</label>
               <CustomDropdown v-model="beatportSecondaryGenre" :options="beatportGenres" />
             </div>
           </div>
@@ -196,11 +133,10 @@
     </div>
 
     <!-- Checkout button -->
-    <div v-if="selectedItems.length > 0" class="mt-4 sticky bottom-4">
+    <div v-if="selectedItems.length > 0" class="spv__checkout">
       <CheckoutButton :item-count="selectedItems.length" :total="`£${totalPrice}`" />
     </div>
 
-    <!-- Beatport Label Modal -->
     <BeatportLabelModal
       v-if="labelModalOpen"
       :step="modalStep"
@@ -313,3 +249,130 @@ const selectedItems = computed(() => {
 
 const totalPrice = computed(() => selectedItems.value.reduce((sum, item) => sum + item.price, 0))
 </script>
+
+<style lang="scss" scoped>
+@use '@/styles/variables' as *;
+@use '@/styles/mixins' as *;
+
+.spv {
+  width: 100%;
+  max-width: 820px;
+  padding: 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  @include sm { padding: 0 1rem; }
+  @include md { padding: 0; gap: 2rem; }
+
+  &__title {
+    font-size: $text-h2;
+    font-weight: 700;
+    color: var(--blue);
+    font-family: $font-poppins;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  &__cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__store-icon { width: 2rem; height: 2rem; }
+
+  /* Fingerprint providers */
+  &__fp-providers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+
+    @include sm { gap: 0.75rem; }
+  }
+
+  &__fp-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #fff;
+    border-radius: $radius-card;
+    border: 1px solid var(--faded-grey);
+    cursor: pointer;
+    transition: border-color 0.15s;
+
+    &:hover { border-color: var(--brand-secondary); }
+    &--on { border-color: var(--brand-secondary); }
+
+    @include sm {
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+    }
+  }
+
+  &__fp-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+
+    @include sm { width: 1.5rem; height: 1.5rem; }
+  }
+
+  &__fp-name {
+    font-size: $text-xs;
+    font-weight: 500;
+    color: var(--blue);
+    font-family: $font-satoshi;
+
+    @include sm { font-size: $text-sm; }
+  }
+
+  &__fp-check {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+    border: 2px solid var(--faded-grey);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s;
+    background: #fff;
+
+    &--on { border-color: var(--brand-secondary); }
+
+    @include sm { width: 1.5rem; height: 1.5rem; }
+  }
+
+  /* Beatport form */
+  &__bp-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+
+    @include md {
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 1rem;
+    }
+  }
+
+  &__field-label {
+    display: block;
+    font-size: $text-xs;
+    color: var(--ditto-grey);
+    margin-bottom: 0.25rem;
+    font-family: $font-satoshi;
+  }
+
+  &__checkout {
+    margin-top: 1rem;
+    position: sticky;
+    bottom: 1rem;
+  }
+}
+</style>

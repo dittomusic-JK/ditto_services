@@ -1,8 +1,6 @@
 <template>
-  <div class="w-full max-w-[820px] px-2 sm:px-4 md:px-0 flex flex-col gap-6 md:gap-8 min-h-screen">
-    <h1 class="text-2xl font-bold text-[#0e112c] font-['Poppins']">
-      Services
-    </h1>
+  <div class="st">
+    <h1 class="st__title">Services</h1>
 
     <!-- Charts Registration Section -->
     <div>
@@ -10,40 +8,17 @@
         title="Charts Registration"
         description="Register your release with official music charts to track your chart positions."
       />
-      <div class="flex flex-col gap-3">
-        <ServiceRow
-          title="Charts Registration UK / Ireland"
-          price="£15"
-          :selected="chartsUKSelected"
-          flag-code="gb"
-          @toggle="toggleChartsUK"
-        >
+      <div class="st__list">
+        <ServiceRow title="Charts Registration UK / Ireland" price="£15" :selected="chartsUKSelected" flag-code="gb" @toggle="toggleChartsUK">
           <template #icon><ChartsIcon /></template>
         </ServiceRow>
-        <ServiceRow
-          title="Charts Registration US / Canada"
-          price="£15"
-          :selected="chartsUSSelected"
-          flag-code="us"
-          @toggle="toggleChartsUS"
-        >
+        <ServiceRow title="Charts Registration US / Canada" price="£15" :selected="chartsUSSelected" flag-code="us" @toggle="toggleChartsUS">
           <template #icon><ChartsIcon /></template>
         </ServiceRow>
-        <ServiceRow
-          title="Charts Registration Australia"
-          price="£15"
-          :selected="chartsAUSelected"
-          flag-code="au"
-          @toggle="toggleChartsAU"
-        >
+        <ServiceRow title="Charts Registration Australia" price="£15" :selected="chartsAUSelected" flag-code="au" @toggle="toggleChartsAU">
           <template #icon><ChartsIcon /></template>
         </ServiceRow>
-        <ServiceRow
-          title="Charts Registration Worldwide"
-          price="£35"
-          :selected="chartsWorldwideSelected"
-          @toggle="toggleChartsWorldwide"
-        >
+        <ServiceRow title="Charts Registration Worldwide" price="£35" :selected="chartsWorldwideSelected" @toggle="toggleChartsWorldwide">
           <template #icon><ChartsGlobalIcon /></template>
         </ServiceRow>
       </div>
@@ -55,7 +30,7 @@
         title="Distribution Services"
         description="Expand your release's reach with additional distribution options."
       />
-      <div class="flex flex-col gap-4">
+      <div class="st__cards">
         <!-- Pre-release Downloads -->
         <FeatureCard
           title="Pre-release downloads"
@@ -67,83 +42,63 @@
           <template #icon><PreReleaseIcon /></template>
           
           <!-- Pre-release form -->
-          <div v-if="preReleaseSelected" class="space-y-5 pt-3 pr-20" @click.stop>
-            <!-- Pre-order date picker -->
+          <div v-if="preReleaseSelected" class="st__prerel-form" @click.stop>
             <div>
-              <label class="block text-sm text-ditto-blue font-satoshi font-medium mb-2">
-                Choose a Pre-order date
-              </label>
-              <div class="flex items-center gap-2 bg-white rounded-xl border border-faded-grey p-3 cursor-pointer hover:border-brand-secondary transition-all">
-                <span class="flex-1 text-base text-brand-secondary font-satoshi">{{ formattedPreOrderDate }}</span>
-                <ChevronIcon class="w-5 h-5 text-ditto-grey" />
+              <label class="st__form-label">Choose a Pre-order date</label>
+              <div class="st__date-picker">
+                <span class="st__date-val">{{ formattedPreOrderDate }}</span>
+                <ChevronIcon class="st__date-chevron" />
               </div>
-              <p v-if="preOrderDateWarning" class="mt-2 text-xs text-brand-secondary font-satoshi">
+              <p v-if="preOrderDateWarning" class="st__date-warn">
                 We cannot guarantee your pre-release will go live in less than 3 days, but will make sure it is available in stores as soon as possible.
               </p>
             </div>
             
             <!-- Instant Gratification toggle -->
-            <div class="flex items-center gap-3">
-              <div class="relative group">
-                <label class="text-sm text-ditto-blue font-satoshi font-medium cursor-help">
-                  Add Instant Gratification?
-                </label>
-                <div class="absolute bottom-full left-0 mb-2 px-3 py-2 bg-ditto-blue text-white text-xs rounded-lg w-72 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            <div class="st__toggle-row">
+              <div class="st__tooltip-wrap">
+                <label class="st__toggle-label">Add Instant Gratification?</label>
+                <div class="st__tooltip">
                   Unlock selected tracks immediately when fans pre-order, giving them a taste of your release before launch. Great for building hype and incentivizing early purchases.
-                  <div class="absolute top-full left-4 border-4 border-transparent border-t-ditto-blue"></div>
+                  <div class="st__tooltip-arrow"></div>
                 </div>
               </div>
               <button
                 @click="instantGratification = !instantGratification"
-                class="relative w-12 h-7 rounded-full transition-colors"
-                :class="instantGratification ? 'bg-success' : 'bg-faded-grey'"
+                class="st__toggle" :class="{ 'st__toggle--on': instantGratification }"
               >
-                <div
-                  class="absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform"
-                  :class="instantGratification ? 'translate-x-[22px]' : 'translate-x-0.5'"
-                />
+                <div class="st__toggle-knob" :class="{ 'st__toggle-knob--on': instantGratification }" />
               </button>
             </div>
             
-            <!-- Instant Gratification Track selection (only show when toggle is on) -->
+            <!-- Instant Gratification Track selection -->
             <div v-if="instantGratification">
-              <label class="block text-xs text-ditto-grey font-satoshi mb-2">
-                Select up to <span class="font-semibold">{{ maxInstantGratTracks }}</span> {{ maxInstantGratTracks > 1 ? 'tracks' : 'track' }}
+              <label class="st__ig-label">
+                Select up to <span class="st__ig-bold">{{ maxInstantGratTracks }}</span> {{ maxInstantGratTracks > 1 ? 'tracks' : 'track' }}
               </label>
-              <div class="flex flex-wrap gap-2">
+              <div class="st__chip-list">
                 <button
-                  v-for="track in availableTracks"
-                  :key="track"
+                  v-for="track in availableTracks" :key="track"
                   @click="toggleInstantGratTrack(track)"
                   :disabled="!selectedInstantGratTracks.includes(track) && selectedInstantGratTracks.length >= maxInstantGratTracks"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium font-satoshi cursor-pointer transition-all border"
+                  class="st__chip"
                   :class="[
-                    selectedInstantGratTracks.includes(track) 
-                      ? 'border-brand-secondary bg-white text-brand-secondary' 
-                      : 'border-faded-grey bg-light-grey text-ditto-grey hover:border-brand-secondary/50',
-                    !selectedInstantGratTracks.includes(track) && selectedInstantGratTracks.length >= maxInstantGratTracks
-                      ? 'opacity-50 cursor-not-allowed'
-                      : ''
+                    selectedInstantGratTracks.includes(track) ? 'st__chip--sel' : 'st__chip--idle',
+                    !selectedInstantGratTracks.includes(track) && selectedInstantGratTracks.length >= maxInstantGratTracks ? 'st__chip--disabled' : ''
                   ]"
                 >
-                  <svg 
-                    v-if="selectedInstantGratTracks.includes(track)" 
-                    width="12" height="12" viewBox="0 0 24 24" fill="none"
-                    class="shrink-0"
-                  >
+                  <svg v-if="selectedInstantGratTracks.includes(track)" width="12" height="12" viewBox="0 0 24 24" fill="none" class="st__chip-check">
                     <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                   {{ track }}
                 </button>
               </div>
-              <p v-if="selectedInstantGratTracks.length === 0" class="mt-2 text-xs text-error font-satoshi">
-                Please select at least one track
-              </p>
+              <p v-if="selectedInstantGratTracks.length === 0" class="st__ig-error">Please select at least one track</p>
             </div>
           </div>
         </FeatureCard>
 
-        <!-- Auto-release - hidden for Ditto+ RLS (always on) -->
+        <!-- Auto-release -->
         <FeatureCard
           v-if="!isDittoPlus"
           title="Auto-release to new platforms"
@@ -158,7 +113,7 @@
           <template #icon><AutoReleaseIcon /></template>
         </FeatureCard>
 
-        <!-- Release Protection - hidden for Ditto+ RLS (always on) -->
+        <!-- Release Protection -->
         <FeatureCard
           v-if="!isDittoPlus"
           title="Release Protection"
@@ -181,7 +136,7 @@
         title="Advanced Stores"
         description="Distribute to specialist music platforms."
       />
-      <div class="flex flex-col gap-4">
+      <div class="st__cards">
         <!-- YouTube Content ID -->
         <FeatureCard
           title="YouTube Content ID & Shorts"
@@ -193,7 +148,7 @@
           :price="includesYouTube ? undefined : '£10'"
           @toggle="includesYouTube ? (youTubeEnabled = !youTubeEnabled) : (youTubeSelected = !youTubeSelected)"
         >
-          <template #icon><img src="/images/YoutubeShorts.svg" alt="YouTube" class="w-8 h-8" /></template>
+          <template #icon><img src="/images/YoutubeShorts.svg" alt="YouTube" class="st__store-icon" /></template>
         </FeatureCard>
 
         <!-- Audio Fingerprint Services -->
@@ -209,23 +164,18 @@
           :is-free="includesFingerprint"
           @toggle="includesFingerprint ? (fingerprintEnabled = !fingerprintEnabled) : undefined"
         >
-          <template #icon><img src="/images/audiofingerprint.svg" alt="Audio Fingerprint" class="w-8 h-8" /></template>
+          <template #icon><img src="/images/audiofingerprint.svg" alt="Audio Fingerprint" class="st__store-icon" /></template>
           
           <!-- Fingerprint providers -->
-          <div v-if="includesFingerprint && fingerprintEnabled" class="flex flex-wrap gap-2 sm:gap-3 mt-2">
+          <div v-if="includesFingerprint && fingerprintEnabled" class="st__fp-providers">
             <div
-              v-for="provider in fingerprintProviders"
-              :key="provider.name"
+              v-for="provider in fingerprintProviders" :key="provider.name"
               @click.stop="provider.enabled = !provider.enabled"
-              class="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-white rounded-xl border cursor-pointer transition-all"
-              :class="provider.enabled ? 'border-brand-secondary' : 'border-faded-grey hover:border-brand-secondary'"
+              class="st__fp-item" :class="{ 'st__fp-item--on': provider.enabled }"
             >
-              <img :src="provider.icon" :alt="provider.name" class="w-5 h-5 sm:w-6 sm:h-6" />
-              <span class="text-xs sm:text-sm font-medium text-ditto-blue font-satoshi">{{ provider.name }}</span>
-              <div
-                class="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-all bg-white"
-                :class="provider.enabled ? 'border-brand-secondary' : 'border-faded-grey'"
-              >
+              <img :src="provider.icon" :alt="provider.name" class="st__fp-icon" />
+              <span class="st__fp-name">{{ provider.name }}</span>
+              <div class="st__fp-check" :class="{ 'st__fp-check--on': provider.enabled }">
                 <svg v-if="provider.enabled" width="12" height="12" viewBox="0 0 24 24" fill="none">
                   <path d="M20 6L9 17L4 12" stroke="#287ef7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
@@ -243,18 +193,16 @@
           :price="includesBeatport ? undefined : '£65'"
           @toggle="includesBeatport ? (beatportEnabled = !beatportEnabled) : (beatportSelected = !beatportSelected)"
         >
-          <template #icon><img src="/images/beatport.svg" alt="Beatport" class="w-8 h-8" /></template>
+          <template #icon><img src="/images/beatport.svg" alt="Beatport" class="st__store-icon" /></template>
           
           <!-- Beatport form fields -->
           <div
             v-if="(includesBeatport && beatportEnabled) || (!includesBeatport && beatportSelected)"
-            class="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-3 md:gap-4 mt-2"
+            class="st__bp-form"
             @click.stop
           >
             <div>
-              <label class="block text-xs text-ditto-grey mb-1 font-satoshi">
-                Beatport Label
-              </label>
+              <label class="st__field-label">Beatport Label</label>
               <BeatportLabelDropdown
                 v-model="beatportLabel"
                 :options="beatportLabelOptions"
@@ -263,15 +211,11 @@
               />
             </div>
             <div>
-              <label class="block text-xs text-ditto-grey mb-1 font-satoshi">
-                Primary Genre
-              </label>
+              <label class="st__field-label">Primary Genre</label>
               <CustomDropdown v-model="beatportPrimaryGenre" :options="beatportGenres" />
             </div>
             <div>
-              <label class="block text-xs text-ditto-grey mb-1 font-satoshi">
-                Secondary Genre
-              </label>
+              <label class="st__field-label">Secondary Genre</label>
               <CustomDropdown v-model="beatportSecondaryGenre" :options="beatportGenres" />
             </div>
           </div>
@@ -280,7 +224,7 @@
     </div>
 
     <!-- Checkout button -->
-    <div v-if="selectedItems.length > 0" class="mt-4 sticky bottom-4">
+    <div v-if="selectedItems.length > 0" class="st__checkout">
       <CheckoutButton :item-count="selectedItems.length" :total="`£${totalPrice}`" />
     </div>
 
@@ -498,3 +442,316 @@ const selectedItems = computed(() => {
 
 const totalPrice = computed(() => selectedItems.value.reduce((sum, item) => sum + item.price, 0))
 </script>
+
+<style lang="scss" scoped>
+@use '@/styles/variables' as *;
+@use '@/styles/mixins' as *;
+
+.st {
+  width: 100%;
+  max-width: 820px;
+  padding: 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-height: 100vh;
+
+  @include sm { padding: 0 1rem; }
+  @include md { padding: 0; gap: 2rem; }
+
+  &__title {
+    font-size: $text-h2;
+    font-weight: 700;
+    color: var(--blue);
+    font-family: $font-poppins;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  &__cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* Pre-release form */
+  &__prerel-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding-top: 0.75rem;
+    padding-right: 5rem;
+  }
+
+  &__form-label {
+    display: block;
+    font-size: $text-sm;
+    color: var(--blue);
+    font-family: $font-satoshi;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  &__date-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    border-radius: $radius-card;
+    border: 1px solid var(--faded-grey);
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+
+    &:hover { border-color: var(--brand-secondary); }
+  }
+
+  &__date-val {
+    flex: 1;
+    font-size: $text-body;
+    color: var(--brand-secondary);
+    font-family: $font-satoshi;
+  }
+
+  &__date-chevron {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--ditto-grey);
+  }
+
+  &__date-warn {
+    margin-top: 0.5rem;
+    font-size: $text-xs;
+    color: var(--brand-secondary);
+    font-family: $font-satoshi;
+  }
+
+  /* Toggle */
+  &__toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &__tooltip-wrap {
+    position: relative;
+
+    &:hover .st__tooltip { opacity: 1; }
+  }
+
+  &__toggle-label {
+    font-size: $text-sm;
+    color: var(--blue);
+    font-family: $font-satoshi;
+    font-weight: 500;
+    cursor: help;
+  }
+
+  &__tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--blue);
+    color: #fff;
+    font-size: $text-xs;
+    border-radius: $radius-lg;
+    width: 18rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  &__tooltip-arrow {
+    position: absolute;
+    top: 100%;
+    left: 1rem;
+    border: 4px solid transparent;
+    border-top-color: var(--blue);
+  }
+
+  &__toggle {
+    position: relative;
+    width: 3rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    background: var(--faded-grey);
+    transition: background 0.15s;
+    cursor: pointer;
+
+    &--on { background: var(--success); }
+  }
+
+  &__toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: #fff;
+    border-radius: 9999px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: transform 0.15s;
+
+    &--on { transform: translateX(22px); }
+  }
+
+  /* IG track chips */
+  &__ig-label {
+    display: block;
+    font-size: $text-xs;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+    margin-bottom: 0.5rem;
+  }
+
+  &__ig-bold { font-weight: 600; }
+
+  &__ig-error {
+    margin-top: 0.5rem;
+    font-size: $text-xs;
+    color: var(--error);
+    font-family: $font-satoshi;
+  }
+
+  &__chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: $radius-lg;
+    font-size: $text-sm;
+    font-weight: 500;
+    font-family: $font-satoshi;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid;
+
+    &--sel {
+      border-color: var(--brand-secondary);
+      background: #fff;
+      color: var(--brand-secondary);
+    }
+
+    &--idle {
+      border-color: var(--faded-grey);
+      background: var(--light-grey);
+      color: var(--ditto-grey);
+
+      &:hover { border-color: rgba($color-brand-secondary, 0.5); }
+    }
+
+    &--disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &__chip-check { flex-shrink: 0; }
+
+  /* Store icons */
+  &__store-icon { width: 2rem; height: 2rem; }
+
+  /* Fingerprint providers */
+  &__fp-providers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+
+    @include sm { gap: 0.75rem; }
+  }
+
+  &__fp-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #fff;
+    border-radius: $radius-card;
+    border: 1px solid var(--faded-grey);
+    cursor: pointer;
+    transition: border-color 0.15s;
+
+    &:hover { border-color: var(--brand-secondary); }
+    &--on { border-color: var(--brand-secondary); }
+
+    @include sm {
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+    }
+  }
+
+  &__fp-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+
+    @include sm { width: 1.5rem; height: 1.5rem; }
+  }
+
+  &__fp-name {
+    font-size: $text-xs;
+    font-weight: 500;
+    color: var(--blue);
+    font-family: $font-satoshi;
+
+    @include sm { font-size: $text-sm; }
+  }
+
+  &__fp-check {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+    border: 2px solid var(--faded-grey);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s;
+    background: #fff;
+
+    &--on { border-color: var(--brand-secondary); }
+
+    @include sm { width: 1.5rem; height: 1.5rem; }
+  }
+
+  /* Beatport form */
+  &__bp-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+
+    @include md {
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 1rem;
+    }
+  }
+
+  &__field-label {
+    display: block;
+    font-size: $text-xs;
+    color: var(--ditto-grey);
+    margin-bottom: 0.25rem;
+    font-family: $font-satoshi;
+  }
+
+  /* Checkout */
+  &__checkout {
+    margin-top: 1rem;
+    position: sticky;
+    bottom: 1rem;
+  }
+}
+</style>

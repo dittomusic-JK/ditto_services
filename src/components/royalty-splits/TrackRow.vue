@@ -1,71 +1,31 @@
 <template>
-  <div class="border-b border-faded-grey last:border-b-0">
-    <!-- Main row -->
-    <div 
-      class="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 items-center py-4 px-2"
-      :class="{ 'bg-lighter-grey rounded-t-2xl': isExpanded }"
-    >
-      <!-- Track number -->
-      <span class="text-base font-semibold text-ditto-blue font-satoshi w-8 text-center">
-        {{ trackNumber }}
-      </span>
+  <div class="tr">
+    <div class="tr__row" :class="{ 'tr__row--expanded': isExpanded }">
+      <span class="tr__num">{{ trackNumber }}</span>
+      <span class="tr__name">{{ trackName }}</span>
 
-      <!-- Track name -->
-      <span class="text-sm font-medium text-ditto-blue font-satoshi truncate">
-        {{ trackName }}
-      </span>
-
-      <!-- Splits count -->
-      <div class="w-16 text-center">
-        <button
-          v-if="splitCount > 0"
-          @click="$emit('toggle')"
-          class="text-sm font-semibold text-brand-secondary font-satoshi hover:underline"
-        >
-          {{ splitCount }}
-        </button>
+      <div class="tr__count">
+        <button v-if="splitCount > 0" @click="$emit('toggle')" class="tr__count-link">{{ splitCount }}</button>
       </div>
 
-      <!-- Your Share -->
-      <div class="w-32">
+      <div class="tr__share">
         <template v-if="splitCount > 0">
-          <div class="flex items-center gap-2">
-            <!-- Mini donut icon -->
-            <DonutChart
-              :segments="shareSegments"
-              :user-share="userShare"
-              :size="24"
-              :stroke-width="4"
-              :show-badge="false"
-            />
-            <span class="text-sm font-semibold text-ditto-blue font-satoshi">
-              {{ userShare }}%
-            </span>
+          <div class="tr__share-inner">
+            <DonutChart :segments="shareSegments" :user-share="userShare" :size="24" :stroke-width="4" :show-badge="false" />
+            <span class="tr__share-pct">{{ userShare }}%</span>
           </div>
         </template>
       </div>
 
-      <!-- Edit button -->
-      <div class="w-28 flex justify-end">
-        <button
-          v-if="splitCount === 0"
-          @click="$emit('toggle')"
-          class="flex items-center gap-1.5 px-4 py-2 border border-brand-secondary rounded-full text-sm font-semibold text-brand-secondary font-satoshi hover:bg-brand-secondary/5 transition-colors"
-        >
+      <div class="tr__action">
+        <button v-if="splitCount === 0" @click="$emit('toggle')" class="tr__btn tr__btn--add">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 3V11M3 7H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
           Add Split
         </button>
-        <button
-          v-else
-          @click="$emit('toggle')"
-          class="flex items-center gap-1.5 px-4 py-2 border rounded-full text-sm font-semibold font-satoshi transition-colors"
-          :class="isExpanded 
-            ? 'border-ditto-grey text-ditto-grey bg-white' 
-            : 'border-brand-secondary text-brand-secondary hover:bg-brand-secondary/5'"
-        >
-          <EditIcon v-if="!isExpanded" class="w-4 h-4" />
+        <button v-else @click="$emit('toggle')" class="tr__btn" :class="isExpanded ? 'tr__btn--close' : 'tr__btn--edit'">
+          <EditIcon v-if="!isExpanded" class="tr__btn-icon" />
           <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
@@ -74,7 +34,6 @@
       </div>
     </div>
 
-    <!-- Expanded editor panel -->
     <SplitsEditor
       v-if="isExpanded"
       :account-holder="accountHolder"
@@ -126,31 +85,122 @@ const splitCount = computed(() => props.splits.length)
 // Colors: purple for yours, orange for confirmed, amber for pending, red for rejected
 const shareSegments = computed(() => {
   const segments = []
-  
-  // User's share
-  if (props.userShare > 0) {
-    segments.push({ percentage: props.userShare, color: '#6C5CE7' })
-  }
-  
-  // Other splits by status
-  const activeSplits = props.splits.filter(s => s.status === 'active')
-  const confirmedShare = activeSplits.reduce((sum, s) => sum + s.share, 0)
-  if (confirmedShare > 0) {
-    segments.push({ percentage: confirmedShare, color: '#FFB100' })
-  }
-  
-  const pendingSplits = props.splits.filter(s => s.status === 'pending')
-  const pendingShare = pendingSplits.reduce((sum, s) => sum + s.share, 0)
-  if (pendingShare > 0) {
-    segments.push({ percentage: pendingShare, color: '#F59E0B' }) // amber
-  }
-  
-  const rejectedSplits = props.splits.filter(s => s.status === 'rejected')
-  const rejectedShare = rejectedSplits.reduce((sum, s) => sum + s.share, 0)
-  if (rejectedShare > 0) {
-    segments.push({ percentage: rejectedShare, color: '#EE404C' }) // red
-  }
-  
+  if (props.userShare > 0) segments.push({ percentage: props.userShare, color: '#6C5CE7' })
+  const confirmedShare = props.splits.filter(s => s.status === 'active').reduce((sum, s) => sum + s.share, 0)
+  if (confirmedShare > 0) segments.push({ percentage: confirmedShare, color: '#FFB100' })
+  const pendingShare = props.splits.filter(s => s.status === 'pending').reduce((sum, s) => sum + s.share, 0)
+  if (pendingShare > 0) segments.push({ percentage: pendingShare, color: '#F59E0B' })
+  const rejectedShare = props.splits.filter(s => s.status === 'rejected').reduce((sum, s) => sum + s.share, 0)
+  if (rejectedShare > 0) segments.push({ percentage: rejectedShare, color: '#EE404C' })
   return segments
 })
 </script>
+
+<style lang="scss" scoped>
+.tr {
+  border-bottom: 1px solid var(--faded-grey);
+
+  &:last-child { border-bottom: 0; }
+
+  &__row {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem 0.5rem;
+
+    &--expanded {
+      background: var(--lighter-grey);
+      border-radius: $radius-card $radius-card 0 0;
+    }
+  }
+
+  &__num {
+    font-size: $text-body;
+    font-weight: 600;
+    color: var(--blue);
+    font-family: $font-satoshi;
+    width: 2rem;
+    text-align: center;
+  }
+
+  &__name {
+    font-size: $text-sm;
+    font-weight: 500;
+    color: var(--blue);
+    font-family: $font-satoshi;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__count {
+    width: 4rem;
+    text-align: center;
+  }
+
+  &__count-link {
+    font-size: $text-sm;
+    font-weight: 600;
+    color: var(--brand-secondary);
+    font-family: $font-satoshi;
+
+    &:hover { text-decoration: underline; }
+  }
+
+  &__share { width: 8rem; }
+
+  &__share-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__share-pct {
+    font-size: $text-sm;
+    font-weight: 600;
+    color: var(--blue);
+    font-family: $font-satoshi;
+  }
+
+  &__action {
+    width: 7rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--brand-secondary);
+    border-radius: $radius-button;
+    font-size: $text-sm;
+    font-weight: 600;
+    font-family: $font-satoshi;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+    &--add {
+      color: var(--brand-secondary);
+      &:hover { background: rgba($color-brand-secondary, 0.05); }
+    }
+
+    &--edit {
+      color: var(--brand-secondary);
+      &:hover { background: rgba($color-brand-secondary, 0.05); }
+    }
+
+    &--close {
+      border-color: var(--ditto-grey);
+      color: var(--ditto-grey);
+      background: #fff;
+    }
+  }
+
+  &__btn-icon {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+</style>

@@ -1,78 +1,59 @@
 <template>
-  <div class="flex items-center gap-2">
+  <div class="sbe">
     <!-- Single bar showing ACTUAL current distribution -->
-    <div class="relative group flex h-2 w-24 rounded-full overflow-hidden cursor-help" :class="isRLS ? 'bg-white/10' : 'bg-light-grey'">
-      <!-- Your share (actual - what you're receiving now) - using brand blue for visibility -->
-      <div
-        class="h-full bg-brand-secondary transition-all"
-        :style="{ width: `${actualUserShare}%` }"
-      />
-      <!-- Confirmed collaborator share -->
-      <div
-        v-if="confirmedShare > 0"
-        class="h-full bg-success transition-all"
-        :style="{ width: `${confirmedShare}%` }"
-      />
-      
-      <!-- Tooltip on hover -->
-      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg" :class="isRLS ? 'bg-rls-bg-elevated border border-rls-border' : 'bg-ditto-blue'">
-        <p class="text-[10px] text-white/70 mb-1.5">Current active split</p>
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-brand-secondary" />
+    <div class="sbe__track" :class="{ 'sbe__track--rls': isRLS }">
+      <div class="sbe__seg sbe__seg--user" :style="{ width: `${actualUserShare}%` }" />
+      <div v-if="confirmedShare > 0" class="sbe__seg sbe__seg--confirmed" :style="{ width: `${confirmedShare}%` }" />
+
+      <!-- Tooltip -->
+      <div class="sbe__tip" :class="{ 'sbe__tip--rls': isRLS }">
+        <p class="sbe__tip-label">Current active split</p>
+        <div class="sbe__tip-rows">
+          <div class="sbe__tip-row">
+            <div class="sbe__dot sbe__dot--user" />
             <span>You: {{ actualUserShare }}%</span>
           </div>
-          <div v-if="confirmedShare > 0" class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-success" />
+          <div v-if="confirmedShare > 0" class="sbe__tip-row">
+            <div class="sbe__dot sbe__dot--confirmed" />
             <span>Collaborators: {{ confirmedShare }}%</span>
           </div>
         </div>
-        <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" :class="isRLS ? 'border-t-rls-bg-elevated' : 'border-t-ditto-blue'" />
+        <div class="sbe__tip-arrow" :class="{ 'sbe__tip-arrow--rls': isRLS }" />
       </div>
     </div>
-    
+
     <!-- Your actual percentage -->
-    <span class="text-xs font-semibold font-satoshi whitespace-nowrap" :class="isRLS ? 'text-rls-accent' : 'text-brand-secondary'">
+    <span class="sbe__pct" :class="{ 'sbe__pct--rls': isRLS }">
       {{ actualUserShare }}%
     </span>
-    
-    <!-- Pending invites badge (separate from distribution) -->
-    <div 
-      v-if="pendingCount > 0" 
-      class="relative group"
-    >
-      <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-medium font-satoshi cursor-help">
+
+    <!-- Pending invites badge -->
+    <div v-if="pendingCount > 0" class="sbe__badge-wrap">
+      <span class="sbe__badge sbe__badge--pending">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
           <circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.5"/>
           <path d="M5 3V5.5L6.5 6.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         {{ pendingCount }}
       </span>
-      
-      <!-- Tooltip -->
-      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-ditto-blue text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+      <div class="sbe__tip sbe__tip--badge">
         {{ pendingCount }} pending invite{{ pendingCount > 1 ? 's' : '' }} awaiting confirmation
-        <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ditto-blue" />
+        <div class="sbe__tip-arrow" />
       </div>
     </div>
-    
-    <!-- Unclaimed badge (needs to create DTO account) -->
-    <div 
-      v-if="unclaimedCount && unclaimedCount > 0" 
-      class="relative group"
-    >
-      <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium font-satoshi cursor-help" :class="isRLS ? 'bg-warning/20 text-warning' : 'bg-orange-100 text-orange-600'">
+
+    <!-- Unclaimed badge -->
+    <div v-if="unclaimedCount && unclaimedCount > 0" class="sbe__badge-wrap">
+      <span class="sbe__badge sbe__badge--unclaimed" :class="{ 'sbe__badge--unclaimed-rls': isRLS }">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
           <circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.5"/>
           <path d="M5 3V5.5M5 7V7.01" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
         </svg>
         {{ unclaimedCount }}
       </span>
-      
-      <!-- Tooltip -->
-      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg" :class="isRLS ? 'bg-rls-bg-elevated border border-rls-border' : 'bg-ditto-blue'">
+      <div class="sbe__tip" :class="{ 'sbe__tip--rls': isRLS }">
         {{ unclaimedCount }} collaborator{{ unclaimedCount > 1 ? 's need' : ' needs' }} to create a Ditto account
-        <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" :class="isRLS ? 'border-t-rls-bg-elevated' : 'border-t-ditto-blue'" />
+        <div class="sbe__tip-arrow" :class="{ 'sbe__tip-arrow--rls': isRLS }" />
       </div>
     </div>
   </div>
@@ -88,7 +69,156 @@ const props = defineProps<{
   isRLS?: boolean
 }>()
 
-// Actual user share = what's left after confirmed splits
-// Pending doesn't affect this - it's just proposed
 const actualUserShare = computed(() => 100 - props.confirmedShare)
 </script>
+
+<style lang="scss" scoped>
+/* Shared tooltip mixin */
+@mixin tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: #fff;
+  font-size: $text-xs;
+  border-radius: $radius-lg;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--blue);
+}
+
+.sbe {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  /* ---- Track ---- */
+  &__track {
+    position: relative;
+    display: flex;
+    height: 0.5rem;
+    width: 6rem;
+    border-radius: $radius-button;
+    overflow: hidden;
+    cursor: help;
+    background: var(--light-grey);
+
+    &--rls { background: rgba(255, 255, 255, 0.1); }
+
+    &:hover > .sbe__tip { opacity: 1; }
+  }
+
+  /* ---- Segments ---- */
+  &__seg {
+    height: 100%;
+    transition: all 0.15s ease;
+
+    &--user      { background: var(--brand-secondary); }
+    &--confirmed { background: var(--success); }
+  }
+
+  /* ---- Tooltip ---- */
+  &__tip {
+    @include tooltip;
+
+    &--rls {
+      background: var(--rls-bg-elevated);
+      border: 1px solid var(--rls-border);
+    }
+
+    &--badge {
+      /* inherits base tooltip; used inside badge-wrap */
+    }
+  }
+
+  &__tip-label {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.375rem;
+  }
+
+  &__tip-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  &__tip-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+
+    &--user      { background: var(--brand-secondary); }
+    &--confirmed { background: var(--success); }
+  }
+
+  &__tip-arrow {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: var(--blue);
+
+    &--rls { border-top-color: var(--rls-bg-elevated); }
+  }
+
+  /* ---- Percentage ---- */
+  &__pct {
+    font-size: $text-xs;
+    font-weight: 600;
+    font-family: $font-satoshi;
+    white-space: nowrap;
+    color: var(--brand-secondary);
+
+    &--rls { color: var(--rls-accent); }
+  }
+
+  /* ---- Badge wrapper (for hover tooltip) ---- */
+  &__badge-wrap {
+    position: relative;
+
+    &:hover > .sbe__tip { opacity: 1; }
+  }
+
+  /* ---- Badges ---- */
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: $radius-button;
+    font-size: 10px;
+    font-weight: 500;
+    font-family: $font-satoshi;
+    cursor: help;
+
+    &--pending {
+      background: $color-amber-100;
+      color: $color-amber-600;
+    }
+
+    &--unclaimed {
+      background: $color-orange-100;
+      color: $color-orange-600;
+    }
+
+    &--unclaimed-rls {
+      background: rgba($color-warning, 0.2);
+      color: $color-warning;
+    }
+  }
+}
+</style>

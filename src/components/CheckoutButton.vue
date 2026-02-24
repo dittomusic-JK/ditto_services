@@ -2,8 +2,8 @@
   <button
     @click="$emit('click')"
     :disabled="itemCount === 0"
-    class="w-full py-4 rounded-button text-white font-semibold text-base font-satoshi transition-all flex items-center justify-center gap-2"
-    :class="itemCount > 0 ? 'bg-ditto-purple hover:opacity-90 cursor-pointer' : 'bg-faded-grey cursor-not-allowed'"
+    class="checkout-btn"
+    :class="{ 'checkout-btn--active': itemCount > 0 }"
   >
     <CartIcon v-if="!isFreeOnly" />
     <svg v-else width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -29,6 +29,33 @@ defineEmits<{
   click: []
 }>()
 
-// Check if total is £0 (only free items selected)
 const isFreeOnly = computed(() => props.total === '£0')
 </script>
+
+<style lang="scss" scoped>
+.checkout-btn {
+  width: 100%;
+  padding: 1rem 0;
+  border-radius: $radius-button;
+  color: #fff;
+  font-weight: 600;
+  font-size: $text-body;
+  font-family: $font-satoshi;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--faded-grey);
+  cursor: not-allowed;
+
+  &--active {
+    background: var(--brand-primary);
+    cursor: pointer;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+}
+</style>
