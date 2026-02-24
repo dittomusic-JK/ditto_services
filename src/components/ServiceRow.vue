@@ -75,7 +75,6 @@ const rowModifier = computed(() => {
   justify-content: space-between;
   padding: 0.75rem;
   border-radius: $radius-card;
-  border: 1px solid;
   transition: all 0.15s ease;
 
   @include sm {
@@ -84,27 +83,23 @@ const rowModifier = computed(() => {
 
   &--active {
     background: rgba($color-ditto-pro, 0.1);
-    border-color: var(--ditto-pro);
   }
 
   &--unavail {
     background: var(--lighter-grey);
-    border-color: var(--faded-grey);
     opacity: 0.6;
   }
 
   &--selected {
     background: var(--lighter-grey);
-    border-color: var(--brand-secondary);
   }
 
   &--default {
     background: var(--lighter-grey);
-    border-color: var(--faded-grey);
     cursor: pointer;
 
     &:hover {
-      border-color: var(--brand-secondary);
+      background: rgba($color-brand-secondary, 0.05);
     }
   }
 

@@ -66,18 +66,18 @@ defineEmits<{
 <style lang="scss" scoped>
 .feature-card {
   border-radius: $radius-card;
-  border: 1px solid var(--faded-grey);
   background: var(--lighter-grey);
   padding: 0.75rem;
   overflow: visible;
   cursor: pointer;
+  transition: background 0.15s ease;
 
   @include sm {
     padding: 1rem;
   }
 
   &:hover:not(.feature-card--disabled) {
-    border-color: var(--brand-secondary);
+    background: rgba($color-brand-secondary, 0.05);
   }
 
   &--disabled {

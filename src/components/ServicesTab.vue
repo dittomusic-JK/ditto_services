@@ -502,12 +502,11 @@ const totalPrice = computed(() => selectedItems.value.reduce((sum, item) => sum 
     gap: 0.5rem;
     background: #fff;
     border-radius: $radius-card;
-    border: 1px solid var(--faded-grey);
     padding: 0.75rem;
     cursor: pointer;
-    transition: border-color 0.15s;
+    transition: background 0.15s;
 
-    &:hover { border-color: var(--brand-secondary); }
+    &:hover { background: var(--lighter-grey); }
   }
 
   &__date-val {
@@ -681,12 +680,11 @@ const totalPrice = computed(() => selectedItems.value.reduce((sum, item) => sum 
     padding: 0.5rem 0.75rem;
     background: #fff;
     border-radius: $radius-card;
-    border: 1px solid var(--faded-grey);
     cursor: pointer;
-    transition: border-color 0.15s;
+    transition: background 0.15s;
 
-    &:hover { border-color: var(--brand-secondary); }
-    &--on { border-color: var(--brand-secondary); }
+    &:hover { background: var(--lighter-grey); }
+    &--on { background: rgba($color-brand-secondary, 0.05); }
 
     @include sm {
       gap: 0.75rem;
