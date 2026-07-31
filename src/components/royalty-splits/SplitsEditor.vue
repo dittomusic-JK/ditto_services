@@ -60,6 +60,7 @@
         @resend="$emit('resend-confirmation', split.id)"
         @commit="handleCommitSplit(split.id)"
         @re-edit="handleReEditSplit(split.id)"
+        @edit-email="$emit('edit-email', split.email)"
       />
     </div>
 
@@ -211,6 +212,7 @@ const emit = defineEmits<{
   'resend-confirmation': [id: string]
   'open-copy-modal': []
   'dirty-change': [isDirty: boolean]
+  'edit-email': [email: string]
 }>()
 
 const containerRef = ref<HTMLDivElement | null>(null)
@@ -460,8 +462,9 @@ const handleClose = () => {
 
   &__title {
     font-size: $text-body;
-    font-weight: 700;
-    font-family: $font-poppins;
+    font-weight: 900;
+    font-family: $font-satoshi;
+    letter-spacing: -0.03em;
     color: var(--blue);
 
     &--rls { color: var(--rls-text); }

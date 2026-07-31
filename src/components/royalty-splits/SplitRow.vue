@@ -137,6 +137,14 @@
         <div class="sr__mini-tip" :class="{ 'sr__mini-tip--rls': isRLS }">Edit split</div>
       </div>
 
+      <!-- Edit email — only for unclaimed (RLS) collaborators -->
+      <div v-if="!isEditable && !isEditingShare && !isDeleted && isRLS && status === 'unclaimed'" class="sr__act-wrap">
+        <button @click="$emit('edit-email')" class="sr__icon-btn sr__icon-btn--rls">
+          <MailIcon />
+        </button>
+        <div class="sr__mini-tip sr__mini-tip--rls">Edit email</div>
+      </div>
+
       <div v-if="!isEditable && !isEditingShare && status === 'pending' && !isRLS" class="sr__act-wrap">
         <button @click="$emit('resend')" class="sr__icon-btn"><SendIcon /></button>
         <div class="sr__mini-tip">Resend confirmation email</div>
@@ -223,6 +231,7 @@
 
       <div class="sr-m__btns">
         <button v-if="status === 'active' || status === 'rejected'" @click="$emit('edit-share')" class="sr__icon-btn"><EditIcon /></button>
+        <button v-if="isRLS && status === 'unclaimed'" @click="$emit('edit-email')" class="sr__icon-btn sr__icon-btn--rls"><MailIcon /></button>
         <button v-if="status === 'pending'" @click="$emit('resend')" class="sr__icon-btn"><SendIcon /></button>
         <button @click="$emit('remove')" class="sr__icon-btn sr__icon-btn--delete"><TrashIcon /></button>
       </div>
@@ -237,7 +246,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import type { SplitStatus } from '../../types'
-import { EditIcon, TrashIcon, SendIcon } from './icons'
+import { EditIcon, TrashIcon, SendIcon, MailIcon } from './icons'
 
 export interface KnownCollaborator {
   name: string
@@ -277,6 +286,7 @@ const emit = defineEmits<{
   resend: []
   commit: []
   're-edit': []
+  'edit-email': []
 }>()
 
 const nameInputRef = ref<HTMLInputElement | null>(null)

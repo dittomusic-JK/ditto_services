@@ -50,9 +50,10 @@
 
   &__logo {
     font-size: 1.125rem;
-    font-weight: 700;
+    font-weight: 900;
     color: var(--brand-primary);
-    font-family: $font-poppins;
+    font-family: $font-satoshi;
+    letter-spacing: -0.03em;
   }
 
   &__links {

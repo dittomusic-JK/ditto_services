@@ -70,9 +70,10 @@ defineEmits<{
 
   &__title {
     font-size: $text-h4;
-    font-weight: 700;
+    font-weight: 900;
     color: var(--blue);
-    font-family: $font-poppins;
+    font-family: $font-satoshi;
+    letter-spacing: -0.03em;
     text-align: center;
     margin-bottom: 0.5rem;
   }

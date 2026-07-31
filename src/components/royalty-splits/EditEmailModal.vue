@@ -3,42 +3,55 @@
     <div class="eem-overlay" @click="$emit('close')">
       <div class="eem" @click.stop>
         <div class="eem__head">
-          <h2 class="eem__title">Edit Email</h2>
-          <p class="eem__desc">Update the email for <strong class="eem__strong">{{ collaboratorName }}</strong></p>
-
-          <div class="eem__field">
-            <label class="eem__label">New email address</label>
-            <input v-model="newEmail" type="email" :placeholder="currentEmail" class="eem__input" @keydown.enter="handleConfirm" />
-            <p v-if="emailError" class="eem__error">{{ emailError }}</p>
+          <div class="eem__head-row">
+            <h2 class="eem__title">Update collaborator email</h2>
+            <button class="eem__close" @click="$emit('close')" aria-label="Close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
           </div>
-
-          <div class="eem__sel-header">
-            <p class="eem__sel-label">Update on these tracks:</p>
-            <button @click="toggleSelectAll" class="eem__sel-toggle">{{ allSelected ? 'Deselect all' : 'Select all' }}</button>
-          </div>
+          <p class="eem__desc">
+            Changing this email will move all sales and royalties for this split to the new email's account. Invitations previously sent to the old email address will no longer work.
+          </p>
         </div>
 
         <div class="eem__body">
-          <div class="eem__chips">
-            <button
-              v-for="track in tracksWithCollaborator"
-              :key="track.trackId"
-              @click="toggleTrack(track.trackId)"
-              class="eem__chip" :class="{ 'eem__chip--sel': selectedTracks.has(track.trackId) }"
-            >
-              <svg v-if="selectedTracks.has(track.trackId)" width="12" height="12" viewBox="0 0 24 24" fill="none" class="eem__chip-check">
+          <div class="eem__field">
+            <label class="eem__label">Current email</label>
+            <p class="eem__current">{{ currentEmail }}</p>
+          </div>
+
+          <div class="eem__field">
+            <label class="eem__label">New email</label>
+            <input
+              v-model="newEmail"
+              type="email"
+              placeholder="name@example.com"
+              class="eem__input"
+              @keydown.enter="handleConfirm"
+            />
+            <p v-if="emailError" class="eem__error">{{ emailError }}</p>
+          </div>
+
+          <label v-if="otherTracks.length > 0" class="eem__check">
+            <input type="checkbox" :checked="applyToAll" class="eem__check-input" @change="applyToAll = !applyToAll" />
+            <span class="eem__check-box" :class="{ 'eem__check-box--on': applyToAll }">
+              <svg v-if="applyToAll" width="12" height="12" viewBox="0 0 24 24" fill="none">
                 <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
-              <span class="eem__chip-num">{{ track.trackNumber }}.</span>
-              <span class="eem__chip-name">{{ track.trackName }}</span>
-            </button>
-          </div>
+            </span>
+            <span class="eem__check-label">
+              Apply this update to all other splits linked to this collaborator email
+              <span class="eem__check-count">({{ otherTracks.length }} other {{ otherTracks.length === 1 ? 'track' : 'tracks' }})</span>
+            </span>
+          </label>
         </div>
 
         <div class="eem__foot">
           <div class="eem__foot-row">
-            <button @click="$emit('close')" class="eem__btn-cancel">Cancel</button>
-            <button @click="handleConfirm" :disabled="!canConfirm" class="eem__btn-confirm">Update Email</button>
+            <button class="eem__btn-cancel" @click="$emit('close')">Cancel</button>
+            <button class="eem__btn-confirm" :disabled="!canConfirm" @click="handleConfirm">Update</button>
           </div>
         </div>
       </div>
@@ -47,13 +60,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import type { TrackSplit } from '../../types'
 
 const props = defineProps<{
   collaboratorName: string
   collaboratorEmail: string
   currentEmail: string
+  currentTrackId: string
   tracksWithCollaborator: TrackSplit[]
 }>()
 
@@ -63,58 +77,38 @@ const emit = defineEmits<{
 }>()
 
 const newEmail = ref('')
-const selectedTracks = ref<Set<string>>(new Set())
+const applyToAll = ref(false)
 
-// Pre-select all tracks on mount
-onMounted(() => {
-  props.tracksWithCollaborator.forEach(t => selectedTracks.value.add(t.trackId))
-})
-
-const toggleTrack = (trackId: string) => {
-  if (selectedTracks.value.has(trackId)) {
-    selectedTracks.value.delete(trackId)
-  } else {
-    selectedTracks.value.add(trackId)
-  }
-  // Force reactivity
-  selectedTracks.value = new Set(selectedTracks.value)
-}
-
-const allSelected = computed(() => 
-  selectedTracks.value.size === props.tracksWithCollaborator.length
+// Other tracks (besides the one the edit was launched from) that share this email
+const otherTracks = computed(() =>
+  props.tracksWithCollaborator.filter(t => t.trackId !== props.currentTrackId)
 )
-
-const toggleSelectAll = () => {
-  if (allSelected.value) {
-    selectedTracks.value = new Set()
-  } else {
-    selectedTracks.value = new Set(props.tracksWithCollaborator.map(t => t.trackId))
-  }
-}
 
 // Email validation
 const emailError = computed(() => {
-  if (!newEmail.value.trim()) return null
+  const value = newEmail.value.trim()
+  if (!value) return null
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(newEmail.value.trim())) {
+  if (!emailRegex.test(value)) {
     return 'Please enter a valid email address'
   }
-  if (newEmail.value.toLowerCase().trim() === props.currentEmail.toLowerCase()) {
+  if (value.toLowerCase() === props.currentEmail.toLowerCase()) {
     return 'New email is the same as current email'
   }
   return null
 })
 
-const canConfirm = computed(() => 
-  newEmail.value.trim() !== '' && 
-  !emailError.value && 
-  selectedTracks.value.size > 0
+const canConfirm = computed(() =>
+  newEmail.value.trim() !== '' && !emailError.value
 )
 
 const handleConfirm = () => {
-  if (canConfirm.value) {
-    emit('confirm', newEmail.value.trim(), Array.from(selectedTracks.value))
-  }
+  if (!canConfirm.value) return
+  // Always update the originating track; include the rest only if the user opted in.
+  const selectedTrackIds = applyToAll.value
+    ? props.tracksWithCollaborator.map(t => t.trackId)
+    : [props.currentTrackId]
+  emit('confirm', newEmail.value.trim(), selectedTrackIds)
 }
 </script>
 
@@ -127,6 +121,7 @@ const handleConfirm = () => {
   align-items: center;
   justify-content: center;
   z-index: 100;
+  padding: 1rem;
 }
 
 .eem {
@@ -136,38 +131,63 @@ const handleConfirm = () => {
   max-width: 95vw;
   max-height: 90vh;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  margin: 0 0.5rem;
   display: flex;
   flex-direction: column;
 
-  @include sm { width: 480px; margin: 0; }
+  @include sm { width: 460px; }
 
   &__head {
-    padding: 1rem;
-    padding-bottom: 0;
+    padding: 1.25rem 1.25rem 0;
     flex-shrink: 0;
-    @include sm { padding: 1.5rem; padding-bottom: 0; }
+    @include sm { padding: 1.5rem 1.5rem 0; }
+  }
+
+  &__head-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
   }
 
   &__title {
     font-size: $text-h4;
-    font-weight: 700;
+    font-weight: 900;
     color: var(--blue);
-    font-family: $font-poppins;
-    margin-bottom: 0.5rem;
+    font-family: $font-satoshi;
+    letter-spacing: -0.03em;
     @include sm { font-size: $text-h3; }
+  }
+
+  &__close {
+    flex-shrink: 0;
+    margin: -0.25rem -0.25rem 0 0;
+    padding: 0.25rem;
+    color: var(--ditto-grey);
+    transition: color 0.15s;
+    cursor: pointer;
+
+    &:hover { color: var(--blue); }
   }
 
   &__desc {
     font-size: $text-sm;
     color: var(--ditto-grey);
     font-family: $font-satoshi;
-    margin-bottom: 1rem;
+    line-height: 1.5;
   }
 
-  &__strong { color: var(--blue); }
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem;
+    min-height: 0;
+    @include sm { padding: 1.5rem; }
+  }
 
-  &__field { margin-bottom: 1rem; }
+  &__field {
+    margin-bottom: 1.25rem;
+  }
 
   &__label {
     display: block;
@@ -177,14 +197,22 @@ const handleConfirm = () => {
     font-family: $font-satoshi;
   }
 
-  &__input {
-    width: 100%;
-    padding: 0.625rem 1rem;
-    border: 1px solid var(--faded-grey);
-    border-radius: $radius-card;
+  &__current {
     font-size: $text-sm;
     color: var(--blue);
     font-family: $font-satoshi;
+    font-weight: 500;
+  }
+
+  &__input {
+    width: 100%;
+    font-size: $text-sm;
+    color: var(--blue);
+    font-family: $font-satoshi;
+    border-bottom: 1px solid var(--faded-grey);
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    background: transparent;
 
     &:focus {
       border-color: var(--brand-secondary);
@@ -199,80 +227,54 @@ const handleConfirm = () => {
     margin-top: 0.25rem;
   }
 
-  &__sel-header {
+  /* Apply-to-all checkbox */
+  &__check {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.75rem;
-  }
-
-  &__sel-label {
-    font-size: $text-sm;
-    font-weight: 600;
-    color: var(--blue);
-    font-family: $font-satoshi;
-  }
-
-  &__sel-toggle {
-    font-size: $text-xs;
-    font-weight: 500;
-    color: var(--brand-secondary);
-    font-family: $font-satoshi;
-    &:hover { text-decoration: underline; }
-  }
-
-  &__body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0 1rem;
-    min-height: 0;
-    @include sm { padding: 0 1.5rem; }
-  }
-
-  &__chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding-bottom: 1rem;
-  }
-
-  &__chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    border-radius: $radius-lg;
-    font-size: $text-sm;
-    font-weight: 500;
-    font-family: $font-satoshi;
+    align-items: flex-start;
+    gap: 0.625rem;
     cursor: pointer;
-    transition: all 0.15s;
-    border: 1px solid var(--faded-grey);
-    background: var(--light-grey);
-    color: var(--ditto-grey);
+  }
 
-    &:hover { border-color: rgba($color-brand-secondary, 0.5); }
+  &__check-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
 
-    &--sel {
+  &__check-box {
+    flex-shrink: 0;
+    margin-top: 0.0625rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 0.375rem;
+    border: 2px solid var(--faded-grey);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    transition: background 0.15s, border-color 0.15s;
+
+    &--on {
+      background: var(--brand-secondary);
       border-color: var(--brand-secondary);
-      background: rgba($color-brand-secondary, 0.1);
-      color: var(--brand-secondary);
     }
   }
 
-  &__chip-check { flex-shrink: 0; }
-  &__chip-num { font-size: $text-xs; opacity: 0.6; }
-  &__chip-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 140px;
-    @include sm { max-width: 180px; }
+  &__check-label {
+    font-size: $text-sm;
+    color: var(--blue);
+    font-family: $font-satoshi;
+    line-height: 1.4;
+  }
+
+  &__check-count {
+    color: var(--ditto-grey);
   }
 
   &__foot {
-    padding: 0.75rem 1rem 1rem;
-    border-top: 1px solid var(--faded-grey);
+    padding: 0.75rem 1.25rem 1.25rem;
     flex-shrink: 0;
     background: #fff;
     border-radius: 0 0 $radius-card $radius-card;
@@ -296,6 +298,7 @@ const handleConfirm = () => {
     color: var(--ditto-grey);
     font-family: $font-satoshi;
     transition: border-color 0.15s, color 0.15s;
+    cursor: pointer;
     &:hover { border-color: var(--blue); color: var(--blue); }
   }
 
@@ -308,6 +311,7 @@ const handleConfirm = () => {
     font-weight: 600;
     font-family: $font-satoshi;
     transition: background 0.15s;
+    cursor: pointer;
     &:hover { background: rgba($color-text-fill, 0.9); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }

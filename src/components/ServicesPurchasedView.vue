@@ -267,9 +267,10 @@ const totalPrice = computed(() => selectedItems.value.reduce((sum, item) => sum 
 
   &__title {
     font-size: $text-h2;
-    font-weight: 700;
+    font-weight: 900;
     color: var(--blue);
-    font-family: $font-poppins;
+    font-family: $font-satoshi;
+    letter-spacing: -0.03em;
   }
 
   &__list {

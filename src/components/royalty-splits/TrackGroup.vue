@@ -128,6 +128,7 @@
           @resend-confirmation="(id) => $emit('resend-confirmation', track.trackId, id)"
           @open-copy-modal="$emit('open-copy-modal', track.trackId)"
           @dirty-change="(isDirty) => $emit('dirty-change', track.trackId, isDirty)"
+          @edit-email="(email) => $emit('edit-email', track.trackId, email)"
         />
       </div>
     </div>
@@ -156,6 +157,7 @@ defineEmits<{
   'open-copy-modal': [trackId: string]
   'copy-to': [trackId: string]
   'dirty-change': [trackId: string, isDirty: boolean]
+  'edit-email': [trackId: string, email: string]
 }>()
 
 const getOtherTracksWithSplits = (currentTrackId: string): TrackSplit[] => {

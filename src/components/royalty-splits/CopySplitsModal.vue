@@ -298,9 +298,10 @@ const handleConfirm = () => {
 
   &__title {
     font-size: $text-h4;
-    font-weight: 700;
+    font-weight: 900;
     color: var(--blue);
-    font-family: $font-poppins;
+    font-family: $font-satoshi;
+    letter-spacing: -0.03em;
     margin-bottom: 1rem;
 
     @include sm { font-size: $text-h3; }

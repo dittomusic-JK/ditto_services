@@ -89,6 +89,7 @@
       @open-copy-modal="openCopyFromModal"
       @copy-to="openCopyToModal"
       @dirty-change="handleDirtyChange"
+      @edit-email="openEditEmailModal"
     />
 
     <CopySplitsModal
@@ -117,6 +118,7 @@
       :collaborator-name="editEmailModal.collaboratorName"
       :collaborator-email="editEmailModal.collaboratorEmail"
       :current-email="editEmailModal.currentEmail"
+      :current-track-id="editEmailModal.currentTrackId"
       :tracks-with-collaborator="editEmailModal.tracksWithCollaborator"
       @close="editEmailModal.show = false"
       @confirm="handleEditEmailConfirm"
@@ -261,12 +263,14 @@ const editEmailModal = reactive<{
   collaboratorName: string
   collaboratorEmail: string
   currentEmail: string
+  currentTrackId: string
   tracksWithCollaborator: TrackSplit[]
 }>({
   show: false,
   collaboratorName: '',
   collaboratorEmail: '',
   currentEmail: '',
+  currentTrackId: '',
   tracksWithCollaborator: []
 })
 
@@ -382,8 +386,8 @@ const populatedRelease: Release = {
         },
         {
           id: 's6',
-          name: 'New Collaborator',
-          email: 'newcollab@email.com',
+          name: 'Bob Johnson',
+          email: 'bob@example.com', // Same collaborator as on 'Lost in Translation' — demos the "apply to all splits" option in Edit email
           share: 15,
           status: 'pending',
           hasAccount: false // Not registered yet - will show indicator
@@ -544,13 +548,26 @@ const edgeCaseRelease: Release = {
   })
 }
 
-// Select release based on demo prop
-const getRelease = () => {
-  if (props.demo === 'empty') return emptyRelease
-  if (props.demo === 'edge-case') return edgeCaseRelease
-  return populatedRelease
+// Select release based on demo prop (deep-cloned so edits never leak between
+// demos or between the subscription and RLS views, which share this data).
+const getRelease = (): Release => {
+  const base = props.demo === 'empty' ? emptyRelease : props.demo === 'edge-case' ? edgeCaseRelease : populatedRelease
+  return JSON.parse(JSON.stringify(base))
 }
 const release = reactive<Release>(getRelease())
+
+// In RLS (Label Services) mode there is no "pending" acceptance step — splits are
+// applied immediately. A collaborator without a Ditto account holds an *unclaimed*
+// share until they sign up to withdraw it; one with an account is simply active.
+if (isRLS.value) {
+  release.tracks.forEach(track => {
+    track.splits.forEach(split => {
+      if (split.status === 'pending') {
+        split.status = split.hasAccount ? 'active' : 'unclaimed'
+      }
+    })
+  })
+}
 
 // Track grouping computed properties
 const tracksWithConfirmedSplits = computed(() =>
@@ -803,40 +820,56 @@ const applyCopyToTracks = (sourceTrack: TrackSplit, targetTracks: TrackSplit[]) 
   })
 }
 
-// Open edit email modal for a collaborator
-const openEditEmailModal = (collaboratorEmail: string) => {
-  // Find all tracks with this collaborator
-  const tracksWithCollaborator = release.tracks.filter(t => 
+// Open edit email modal for a collaborator on a given track
+const openEditEmailModal = (trackId: string, collaboratorEmail: string) => {
+  // Find all tracks where this collaborator email appears
+  const tracksWithCollaborator = release.tracks.filter(t =>
     t.splits.some(s => s.email.toLowerCase() === collaboratorEmail.toLowerCase())
   )
-  
-  // Get collaborator name from first track
-  const firstSplit = tracksWithCollaborator[0]?.splits.find(
+
+  // Get collaborator name from the originating track (fall back to first match)
+  const sourceTrack = release.tracks.find(t => t.trackId === trackId) ?? tracksWithCollaborator[0]
+  const sourceSplit = sourceTrack?.splits.find(
     s => s.email.toLowerCase() === collaboratorEmail.toLowerCase()
   )
-  
-  if (firstSplit && tracksWithCollaborator.length > 0) {
-    editEmailModal.collaboratorName = firstSplit.name
-    editEmailModal.collaboratorEmail = firstSplit.email
-    editEmailModal.currentEmail = firstSplit.email
+
+  if (sourceSplit && tracksWithCollaborator.length > 0) {
+    editEmailModal.collaboratorName = sourceSplit.name
+    editEmailModal.collaboratorEmail = sourceSplit.email
+    editEmailModal.currentEmail = sourceSplit.email
+    editEmailModal.currentTrackId = sourceTrack?.trackId ?? trackId
     editEmailModal.tracksWithCollaborator = tracksWithCollaborator
     editEmailModal.show = true
   }
 }
 
-// Handle edit email confirmation
+// Handle edit email confirmation.
+// Per spec: always update the given track; update other tracks only if the user opted in.
+// After updating, re-derive the split status from whether the new email has a Ditto account:
+//  - has account  -> 'active' (claimed)
+//  - no account   -> 'unclaimed' (held in a placeholder account)
 const handleEditEmailConfirm = (newEmail: string, selectedTrackIds: string[]) => {
   const oldEmail = editEmailModal.currentEmail.toLowerCase()
+  const newHasAccount = knownCollaborators.some(
+    c => c.email.toLowerCase() === newEmail.toLowerCase()
+  )
   let updatedCount = 0
-  
+
   selectedTrackIds.forEach(trackId => {
     const track = release.tracks.find(t => t.trackId === trackId)
     if (track) {
       const split = track.splits.find(s => s.email.toLowerCase() === oldEmail)
       if (split) {
         split.email = newEmail
-        // Mark as pending since email changed
-        if (split.status === 'active') {
+        split.hasAccount = newHasAccount
+        if (isRLS.value) {
+          // RLS splits are applied immediately — the new email is either claimed or unclaimed.
+          split.status = newHasAccount ? 'active' : 'unclaimed'
+          split.activeSince = newHasAccount
+            ? new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+            : undefined
+        } else if (split.status === 'active') {
+          // Subscription splits need re-confirmation after an email change.
           split.status = 'pending'
         }
         pendingChanges[trackId] = true
@@ -844,9 +877,13 @@ const handleEditEmailConfirm = (newEmail: string, selectedTrackIds: string[]) =>
       }
     }
   })
-  
+
   editEmailModal.show = false
-  showToast(`Email updated on ${updatedCount} track${updatedCount !== 1 ? 's' : ''}`)
+  showToast(
+    updatedCount > 1
+      ? `Email updated across ${updatedCount} splits`
+      : 'Collaborator email updated'
+  )
 }
 
 // Handle back button click - check for unsaved changes
@@ -938,9 +975,10 @@ const handleCancelUnsavedChanges = () => {
 
   &__title {
     font-size: 1.25rem;
-    font-weight: 700;
+    font-weight: 900;
     color: var(--blue);
-    font-family: $font-poppins;
+    font-family: $font-satoshi;
+    letter-spacing: -0.03em;
   }
 
   &__legend {

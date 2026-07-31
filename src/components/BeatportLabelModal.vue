@@ -137,9 +137,10 @@ const selectedLabel = ref('')
 
   &__h2 {
     font-size: $text-h2;
-    font-weight: 700;
+    font-weight: 900;
     color: var(--text-fill);
-    font-family: $font-poppins;
+    font-family: $font-satoshi;
+    letter-spacing: -0.03em;
     margin-bottom: 0.5rem;
   }
 
