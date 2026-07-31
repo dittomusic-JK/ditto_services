@@ -728,7 +728,11 @@ const handleResendConfirmation = (trackId: string, splitId: string) => {
   const track = release.tracks.find(t => t.trackId === trackId)
   const split = track?.splits.find(s => s.id === splitId)
   if (split) {
-    showToast(`Confirmation email sent to ${split.email}`, 'info')
+    if (split.status === 'unclaimed') {
+      showToast(`Invitation resent to ${split.email}`, 'info')
+    } else {
+      showToast(`Confirmation email sent to ${split.email}`, 'info')
+    }
   }
 }
 
@@ -975,7 +979,7 @@ const handleCancelUnsavedChanges = () => {
 
   &__title {
     font-size: 1.25rem;
-    font-weight: 900;
+    font-weight: 700;
     color: var(--blue);
     font-family: $font-satoshi;
     letter-spacing: -0.03em;

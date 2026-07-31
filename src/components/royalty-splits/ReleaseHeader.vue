@@ -114,7 +114,7 @@ const progressOffset = computed(() => {
 
   &__title {
     font-size: $text-body;
-    font-weight: 900;
+    font-weight: 700;
     color: var(--blue);
     font-family: $font-satoshi;
     letter-spacing: -0.03em;

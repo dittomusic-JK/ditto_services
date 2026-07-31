@@ -138,16 +138,22 @@
       </div>
 
       <!-- Edit email — only for unclaimed (RLS) collaborators -->
-      <div v-if="!isEditable && !isEditingShare && !isDeleted && isRLS && status === 'unclaimed'" class="sr__act-wrap">
-        <button @click="$emit('edit-email')" class="sr__icon-btn sr__icon-btn--rls">
+      <div v-if="!isEditable && !isEditingShare && !isDeleted && status === 'unclaimed'" class="sr__act-wrap">
+        <button @click="$emit('edit-email')" class="sr__icon-btn" :class="{ 'sr__icon-btn--rls': isRLS }">
           <MailIcon />
         </button>
-        <div class="sr__mini-tip sr__mini-tip--rls">Edit email</div>
+        <div class="sr__mini-tip" :class="{ 'sr__mini-tip--rls': isRLS }">Edit email</div>
       </div>
 
       <div v-if="!isEditable && !isEditingShare && status === 'pending' && !isRLS" class="sr__act-wrap">
         <button @click="$emit('resend')" class="sr__icon-btn"><SendIcon /></button>
         <div class="sr__mini-tip">Resend confirmation email</div>
+      </div>
+
+      <!-- Resend invitation — unclaimed collaborators can be re-invited -->
+      <div v-if="!isEditable && !isEditingShare && !isDeleted && status === 'unclaimed'" class="sr__act-wrap">
+        <button @click="$emit('resend')" class="sr__icon-btn" :class="{ 'sr__icon-btn--rls': isRLS }"><SendIcon /></button>
+        <div class="sr__mini-tip" :class="{ 'sr__mini-tip--rls': isRLS }">Resend invitation</div>
       </div>
 
       <div class="sr__act-wrap">
@@ -231,8 +237,8 @@
 
       <div class="sr-m__btns">
         <button v-if="status === 'active' || status === 'rejected'" @click="$emit('edit-share')" class="sr__icon-btn"><EditIcon /></button>
-        <button v-if="isRLS && status === 'unclaimed'" @click="$emit('edit-email')" class="sr__icon-btn sr__icon-btn--rls"><MailIcon /></button>
-        <button v-if="status === 'pending'" @click="$emit('resend')" class="sr__icon-btn"><SendIcon /></button>
+        <button v-if="status === 'unclaimed'" @click="$emit('edit-email')" class="sr__icon-btn" :class="{ 'sr__icon-btn--rls': isRLS }"><MailIcon /></button>
+        <button v-if="status === 'pending' || status === 'unclaimed'" @click="$emit('resend')" class="sr__icon-btn"><SendIcon /></button>
         <button @click="$emit('remove')" class="sr__icon-btn sr__icon-btn--delete"><TrashIcon /></button>
       </div>
     </div>
