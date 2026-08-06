@@ -16,6 +16,10 @@
             to="/royalty-splits-rls" 
             class="app__link" :class="{ 'app__link--active-rls': $route.path === '/royalty-splits-rls' }"
           >Splits (RLS)</router-link>
+          <router-link 
+            to="/royalty-splits-app" 
+            class="app__link" :class="{ 'app__link--active': $route.path === '/royalty-splits-app' }"
+          >Splits (App)</router-link>
         </div>
       </div>
     </nav>

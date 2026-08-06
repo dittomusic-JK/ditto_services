@@ -21,6 +21,11 @@ const router = createRouter({
       path: '/royalty-splits-rls',
       name: 'royalty-splits-rls',
       component: () => import('../views/RoyaltySplitsViewRLS.vue')
+    },
+    {
+      path: '/royalty-splits-app',
+      name: 'royalty-splits-app',
+      component: () => import('../views/RoyaltySplitsAppView.vue')
     }
   ]
 })
