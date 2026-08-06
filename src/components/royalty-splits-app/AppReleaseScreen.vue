@@ -42,13 +42,11 @@
         <p class="ars__track-name">{{ track.trackName }}</p>
         <div class="ars__track-meta">
           <span>Splits: <b class="ars__meta-purple">{{ track.splits.length }}</b></span>
-          <span class="ars__meta-purple ars__meta-b">{{ trackUserShare(track) }}%</span>
           <span class="ars__track-bar">
             <span class="ars__track-bar-seg ars__track-bar-seg--user" :style="{ width: `${trackUserShare(track)}%` }"></span>
             <span v-if="trackActive(track) > 0" class="ars__track-bar-seg ars__track-bar-seg--active" :style="{ width: `${trackActive(track)}%` }"></span>
           </span>
-          <span v-if="trackActive(track) > 0" class="ars__meta-green ars__meta-b">{{ trackActive(track) }}%</span>
-          <span v-else class="ars__meta-purple ars__meta-b">0%</span>
+          <span class="ars__meta-b ars__meta-share">{{ trackUserShare(track) }}%</span>
 
           <!-- Pending / unclaimed badges (web ShareBarEnhanced parity) -->
           <span v-if="trackPendingCount(track) > 0" class="ars__badge ars__badge--pending">
@@ -276,13 +274,13 @@ const trackRowClass = (t: TrackSplit): string => {
   }
 
   &__meta-purple { color: $color-brand-primary; }
-  &__meta-green { color: #00b344; }
+  &__meta-share { color: var(--brand-secondary); }
   &__meta-b { font-weight: 600; }
 
   &__track-bar {
     display: flex;
     width: 6rem;
-    height: 0.4375rem;
+    height: 0.5rem;
     border-radius: 9999px;
     overflow: hidden;
     background: var(--light-grey);
@@ -291,8 +289,8 @@ const trackRowClass = (t: TrackSplit): string => {
   &__track-bar-seg {
     height: 100%;
 
-    &--user { background: $color-brand-primary; }
-    &--active { background: #00d346; }
+    &--user { background: var(--brand-secondary); }
+    &--active { background: var(--success); }
   }
 
   &__badge {

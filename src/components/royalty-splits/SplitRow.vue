@@ -107,11 +107,11 @@
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="sr__pend-arrow">
               <path d="M4 6H8M8 6L6 4M8 6L6 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <span class="sr__pend-to">{{ share }}%</span>
+            <span class="sr__pend-to" :class="{ 'sr__pend-to--unsaved': isEdited }">{{ share }}%</span>
           </div>
           <div class="sr__pend-badge">
-            <div class="sr__dot sr__dot--pending" />
-            <span class="sr__pend-label">Pending</span>
+            <div class="sr__dot" :class="isEdited ? 'sr__dot--unsaved' : 'sr__dot--pending'" />
+            <span class="sr__pend-label" :class="{ 'sr__pend-label--unsaved': isEdited }">{{ pendChangeLabel }}</span>
           </div>
         </template>
         <template v-else>
@@ -270,6 +270,7 @@ const props = withDefaults(defineProps<{
   isEditable?: boolean
   isNew?: boolean // Is this a new split not yet saved
   isDeleted?: boolean // Is this split marked for deletion
+  isEdited?: boolean // Existing split with a staged (unsaved) change
   canEditEmail?: boolean
   knownCollaborators?: KnownCollaborator[]
   currentTotalShare?: number // Total share already allocated (excluding this row)
@@ -280,6 +281,7 @@ const props = withDefaults(defineProps<{
   isEditable: false,
   isNew: false,
   isDeleted: false,
+  isEdited: false,
   canEditEmail: false,
   knownCollaborators: () => [],
   currentTotalShare: 0,
@@ -323,11 +325,16 @@ const shareExceeds100 = computed(() => {
 })
 
 // Check if there's a pending change (originalShare differs from current share)
+// A share change worth surfacing: either staged (not yet saved) or saved and
+// awaiting the collaborator's re-confirmation.
 const hasPendingChange = computed(() => {
-  return props.originalShare !== undefined && 
+  return props.originalShare !== undefined &&
          props.originalShare !== props.share &&
-         props.status === 'pending'
+         (props.status === 'pending' || props.isEdited)
 })
+
+// Until Save Splits is pressed the change is only staged, so say so.
+const pendChangeLabel = computed(() => (props.isEdited ? 'Unsaved' : 'Pending'))
 
 // Filter collaborators based on input
 const filteredCollaborators = computed(() => {
@@ -834,6 +841,8 @@ const emitUpdate = () => {
     font-weight: 500;
     color: $color-amber-500;
     font-family: $font-satoshi;
+
+    &--unsaved { color: var(--brand-secondary); }
   }
 
   &__pend-badge {
@@ -846,6 +855,8 @@ const emitUpdate = () => {
     font-size: 10px;
     color: $color-amber-600;
     font-family: $font-satoshi;
+
+    &--unsaved { color: var(--brand-secondary); }
   }
 
   &__actions {

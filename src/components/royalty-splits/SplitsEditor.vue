@@ -14,10 +14,10 @@
         <span class="se__summary-label" :class="{ 'se__summary-label--rls': isRLS }">Your Split:</span>
         <div class="se__summary-row">
           <p class="se__summary-val" :class="{ 'se__summary-val--rls': isRLS }">{{ activeUserShare }}%</p>
-          <template v-if="hasPendingChanges && !isRLS && activeUserShare !== currentUserShare">
+          <template v-if="!isRLS && (hasPendingChanges || hasStagedEdit) && activeUserShare !== currentUserShare">
             <span class="se__summary-sep">&gt;</span>
-            <p class="se__summary-pending">{{ currentUserShare }}%</p>
-            <span class="se__summary-pending-tag">Pending</span>
+            <p class="se__summary-pending" :class="{ 'se__summary-pending--unsaved': hasStagedEdit }">{{ currentUserShare }}%</p>
+            <span class="se__summary-pending-tag" :class="{ 'se__summary-pending-tag--unsaved': hasStagedEdit }">{{ hasStagedEdit ? 'Unsaved' : 'Pending' }}</span>
           </template>
         </div>
       </div>
@@ -52,6 +52,7 @@
         :is-editable="(split.isNew && !split.isCommitted) || false"
         :is-new="split.isNew"
         :is-deleted="split.isDeleted"
+        :is-edited="split.isEdited"
         :known-collaborators="availableCollaborators"
         :current-total-share="currentTotalShare - split.share"
         :is-r-l-s="isRLS"
@@ -172,6 +173,9 @@ const currentUserShare = computed(() => {
   return 100 - currentTotalShare.value
 })
 
+// A saved split has a staged (unsaved) change in this editor session
+const hasStagedEdit = computed(() => stagedSplits.value.some(s => s.isEdited && !s.isDeleted))
+
 // Check if there are pending changes (only pending splits - rejected means share is back with user)
 const hasPendingChanges = computed(() => 
   props.existingSplits.some(s => s.status === 'pending')
@@ -270,6 +274,12 @@ const addNewSplitRow = () => {
 const handleSplitUpdate = (id: string, data: { name: string; email: string; share: number }) => {
   const split = stagedSplits.value.find(s => s.id === id)
   if (split) {
+    // Remember the last saved share the first time an existing split is edited so
+    // the row can show "15% -> 30%" while the change is still staged.
+    if (!split.isNew && split.originalShare === undefined && data.share !== split.share) {
+      split.originalShare = split.share
+    }
+
     split.name = data.name
     split.email = data.email
     split.share = data.share
@@ -444,12 +454,16 @@ const handleClose = () => {
     font-weight: 700;
     color: $color-amber-500;
     font-family: $font-satoshi;
+
+    &--unsaved { color: var(--brand-secondary); }
   }
 
   &__summary-pending-tag {
     font-size: 10px;
     color: $color-amber-500;
     font-family: $font-satoshi;
+
+    &--unsaved { color: var(--brand-secondary); }
   }
 
   /* ---- Header ---- */
