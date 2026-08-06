@@ -28,12 +28,19 @@
       </div>
       <p class="ats__collab-line">Email: <span class="ats__collab-email">{{ split.email }}</span></p>
       <p class="ats__collab-line">
-        Share: <span class="ats__collab-share" :class="{ 'ats__collab-share--rejected': split.status === 'rejected' }">{{ split.share }}%</span>
+        Share:
+        <!-- Share changed and awaiting re-confirmation (web pending-change parity) -->
+        <template v-if="hasPendingChange(split)">
+          <span class="ats__pend-from">{{ split.originalShare }}%</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="ats__pend-arrow"><path d="M4 6H8M8 6L6 4M8 6L6 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="ats__pend-to">{{ split.share }}%</span>
+        </template>
+        <span v-else class="ats__collab-share" :class="{ 'ats__collab-share--rejected': split.status === 'rejected' }">{{ split.share }}%</span>
         <MiniPie :share="split.share" :color="pieColorFor(split)" />
       </p>
       <p v-if="split.status === 'active'" class="ats__status ats__status--active">
         <span class="ats__dot ats__dot--active"></span>
-        Active{{ split.activeSince ? ` since ${split.activeSince}` : '' }}
+        Active
       </p>
       <p v-else-if="split.status === 'pending'" class="ats__status ats__status--pending">
         <span class="ats__dot ats__dot--pending"></span>
@@ -62,6 +69,7 @@
     <!-- Add + copy links -->
     <button class="ats__add-link" @click="$emit('add')">+ Add another collaborator</button>
     <button v-if="hasCopySources" class="ats__add-link ats__add-link--copy" @click="$emit('copy-from')">Copy splits from another track</button>
+    <button v-if="splits.length > 0" class="ats__add-link ats__add-link--copy" @click="$emit('copy-to')">Copy these splits to other tracks</button>
 
     <!-- Save -->
     <button class="ats__save" :disabled="!dirty" @click="$emit('save')">
@@ -92,11 +100,16 @@ defineEmits<{
   save: []
   menu: [split: Collaborator]
   'copy-from': []
+  'copy-to': []
 }>()
 
 // Rejected shares return to the account holder (web semantics)
 const userShare = computed(() => Math.max(0, 100 - props.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0)))
 const pieColor = '#5f1fff'
+
+// A saved split whose share was revised and is awaiting re-confirmation
+const hasPendingChange = (split: Collaborator): boolean =>
+  split.originalShare !== undefined && split.originalShare !== split.share && split.status === 'pending'
 
 const pieColorFor = (split: Collaborator): string => {
   if (split.status === 'active') return '#00d346'
@@ -226,6 +239,23 @@ const MiniPie = defineComponent({
   }
 
   &__collab-email { color: $color-brand-primary; }
+
+  &__pend-from {
+    font-size: $text-sm;
+    font-weight: 600;
+    color: #00b344;
+    font-family: $font-satoshi;
+  }
+
+  &__pend-arrow { color: var(--ditto-grey); }
+
+  &__pend-to {
+    font-size: $text-sm;
+    font-weight: 600;
+    color: $color-amber-600;
+    font-family: $font-satoshi;
+  }
+
   &__collab-share {
     color: $color-brand-primary;
     font-weight: 600;

@@ -31,6 +31,7 @@
           @save="saveSlate"
           @menu="openMenu"
           @copy-from="screen = 'copyFrom'"
+          @copy-to="openCopyTo"
         />
 
         <!-- Copy splits from another track -->
@@ -50,6 +51,35 @@
             </span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="rsa__copy-chevron"><polyline points="9,18 15,12 9,6"/></svg>
           </button>
+        </div>
+
+        <!-- Copy these splits to other tracks -->
+        <div v-else-if="screen === 'copyTo'" class="rsa__copy">
+          <div class="rsa__copy-titlebar">
+            <button class="rsa__copy-back" @click="screen = 'track'" aria-label="Back">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
+            </button>
+            <h2 class="rsa__copy-title">Copy Splits To</h2>
+          </div>
+          <p class="rsa__copy-hint">Copying replaces each selected track's splits. Collaborators are invited to confirm.</p>
+
+          <button v-for="target in copyTargets" :key="target.trackId" class="rsa__copy-row" @click="toggleCopyTarget(target.trackId)">
+            <span class="rsa__copy-check" :class="{ 'rsa__copy-check--on': copyToSelection.includes(target.trackId) }">
+              <svg v-if="copyToSelection.includes(target.trackId)" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+            </span>
+            <span class="rsa__copy-num">{{ target.trackNumber }}</span>
+            <span class="rsa__copy-body">
+              <span class="rsa__copy-name">{{ target.trackName }}</span>
+              <span class="rsa__copy-meta">{{ target.splits.length > 0 ? `${target.splits.length} split${target.splits.length === 1 ? '' : 's'} — will be replaced` : 'No splits yet' }}</span>
+            </span>
+          </button>
+
+          <div class="rsa__copy-actions">
+            <button class="rsa__copy-all" @click="toggleAllCopyTargets">{{ copyToSelection.length === copyTargets.length ? 'Deselect all' : 'Select all' }}</button>
+            <button class="rsa__copy-confirm" :disabled="copyToSelection.length === 0" @click="confirmCopyTo">
+              Copy to {{ copyToSelection.length }} track{{ copyToSelection.length === 1 ? '' : 's' }}
+            </button>
+          </div>
         </div>
 
         <AppCollaboratorSlate
@@ -211,7 +241,7 @@ const release = reactive<Release>({
 })
 
 // ---- Screen state ----
-type Screen = 'release' | 'track' | 'add' | 'edit' | 'editEmail' | 'copyFrom'
+type Screen = 'release' | 'track' | 'add' | 'edit' | 'editEmail' | 'copyFrom' | 'copyTo'
 const screen = ref<Screen>('release')
 const currentTrackId = ref<string | null>(null)
 const slateDirty = ref(false)
@@ -312,6 +342,46 @@ const addCollaborator = (payload: { name: string; email: string; share: number; 
   scrollTop()
 }
 
+// ---- Copy splits TO other tracks (web TrackGroup copy-to parity) ----
+const copyToSelection = ref<string[]>([])
+const copyTargets = computed(() => release.tracks.filter(t => t.trackId !== currentTrackId.value))
+
+const openCopyTo = () => {
+  copyToSelection.value = []
+  screen.value = 'copyTo'
+  scrollTop()
+}
+
+const toggleCopyTarget = (trackId: string) => {
+  const i = copyToSelection.value.indexOf(trackId)
+  i > -1 ? copyToSelection.value.splice(i, 1) : copyToSelection.value.push(trackId)
+}
+
+const toggleAllCopyTargets = () => {
+  copyToSelection.value = copyToSelection.value.length === copyTargets.value.length
+    ? []
+    : copyTargets.value.map(t => t.trackId)
+}
+
+const confirmCopyTo = () => {
+  const source = currentTrack.value
+  if (!source || copyToSelection.value.length === 0) return
+  const count = copyToSelection.value.length
+  release.tracks.forEach(track => {
+    if (!copyToSelection.value.includes(track.trackId)) return
+    track.splits = source.splits.map(sp => ({
+      ...sp,
+      id: `new_${nextId++}`,
+      status: 'pending' as const,
+      activeSince: undefined,
+      originalShare: undefined,
+    }))
+  })
+  screen.value = 'track'
+  scrollTop()
+  showToast(`Splits copied to ${count} track${count === 1 ? '' : 's'}.`)
+}
+
 // ---- Copy splits from another track (web parity) ----
 const copyFromTrack = (sourceId: string) => {
   const source = release.tracks.find(t => t.trackId === sourceId)
@@ -322,6 +392,7 @@ const copyFromTrack = (sourceId: string) => {
     id: `new_${nextId++}`,
     status: 'pending' as const,
     activeSince: undefined,
+    originalShare: undefined,
   }))
   slateDirty.value = true
   screen.value = 'track'
@@ -410,8 +481,12 @@ const handleMenuSelect = (id: string) => {
 const applyEditSplit = (payload: { name: string; email: string; share: number; applyToAll: boolean }) => {
   const target = menuTarget.value
   if (target) {
+    // Web parity: remember the confirmed share so the row can show "15% → 30%"
+    if (target.status === 'active' && target.originalShare === undefined) {
+      target.originalShare = target.share
+    }
     target.share = payload.share
-    // Web parity: editing an active or rejected split sends a new offer
+    // Editing an active or rejected split sends a new offer
     if (target.status === 'active' || target.status === 'rejected') target.status = 'pending'
     showToast("Split updated! We've sent an email to your collaborators. When they accept the revised offer, the split will be confirmed.")
   }
@@ -667,6 +742,60 @@ const tabIcons = [
   &__copy-chevron {
     color: var(--darkening-grey);
     flex-shrink: 0;
+  }
+
+  &__copy-check {
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 0.3125rem;
+    border: 2px solid var(--faded-grey);
+    background: #fff;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+
+    &--on {
+      background: $color-brand-primary;
+      border-color: $color-brand-primary;
+    }
+  }
+
+  &__copy-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem;
+  }
+
+  &__copy-all {
+    font-size: $text-sm;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover { color: $color-brand-primary; }
+  }
+
+  &__copy-confirm {
+    flex: 1;
+    padding: 0.875rem 1rem;
+    border-radius: 9999px;
+    background: $color-brand-primary;
+    color: #fff;
+    font-size: $text-sm;
+    font-weight: 500;
+    font-family: $font-satoshi;
+    cursor: pointer;
+    transition: opacity 0.15s;
+
+    &:hover { opacity: 0.92; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 }
 

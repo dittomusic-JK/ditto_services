@@ -60,10 +60,6 @@
             {{ trackUnclaimedCount(track) }}
           </span>
         </div>
-        <p v-if="trackActiveSince(track)" class="ars__track-status">
-          <span class="ars__track-dot"></span>
-          Active since {{ trackActiveSince(track) }}
-        </p>
       </div>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ars__track-chevron"><polyline points="9,18 15,12 9,6"/></svg>
     </button>
@@ -91,7 +87,6 @@ const progressOffset = computed(() => {
 // count as yours (badges carry the counts) and rejected shares return to you.
 const trackActive = (t: TrackSplit) => t.splits.filter(s => s.status === 'active').reduce((sum, s) => sum + s.share, 0)
 const trackUserShare = (t: TrackSplit) => Math.max(0, 100 - trackActive(t))
-const trackActiveSince = (t: TrackSplit) => t.splits.find(s => s.status === 'active' && s.activeSince)?.activeSince
 const trackPendingCount = (t: TrackSplit) => t.splits.filter(s => s.status === 'pending').length
 const trackUnclaimedCount = (t: TrackSplit) => t.splits.filter(s => s.status === 'unclaimed').length
 
