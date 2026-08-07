@@ -10,9 +10,19 @@
         <h2 class="ats__title">{{ title }}</h2>
         <div class="ats__meta">
           <span>Splits: <b class="ats__meta-purple">{{ splits.length }}</b></span>
-          <span>Your Share: <b class="ats__meta-purple">{{ userShare }}%</b></span>
-          <MiniPie :share="100 - userShare" :color="pieColor" />
+          <span>
+            Your Split: <b class="ats__meta-purple">{{ activeUserShare }}%</b>
+            <template v-if="stagedUserShare !== activeUserShare">
+              <span class="ats__meta-sep">&gt;</span>
+              <b class="ats__meta-pending">{{ stagedUserShare }}%</b>
+              <span class="ats__meta-tag">Pending</span>
+            </template>
+          </span>
         </div>
+        <p v-if="pendingCount > 0" class="ats__pending-note">
+          <svg width="11" height="11" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M5 3V5.5L6.5 6.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          {{ pendingCount }} pending invite{{ pendingCount === 1 ? '' : 's' }} awaiting confirmation
+        </p>
       </div>
     </div>
 
@@ -36,15 +46,20 @@
           <span class="ats__pend-to">{{ split.share }}%</span>
         </template>
         <span v-else class="ats__collab-share" :class="{ 'ats__collab-share--rejected': split.status === 'rejected' }">{{ split.share }}%</span>
-        <MiniPie :share="split.share" :color="pieColorFor(split)" />
+      </p>
+
+      <!-- Not registered yet — web shows this on hover; mobile has no hover, so it's inline -->
+      <p v-if="split.hasAccount === false" class="ats__unreg">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="ats__unreg-icon"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5V8.5M8 10.5V10.51" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Not registered yet. They'll need to create a Ditto account to approve.
       </p>
       <p v-if="split.status === 'active'" class="ats__status ats__status--active">
         <span class="ats__dot ats__dot--active"></span>
-        Active
+        Active{{ split.activeSince ? ` since ${split.activeSince}` : '' }}
       </p>
       <p v-else-if="split.status === 'pending'" class="ats__status ats__status--pending">
         <span class="ats__dot ats__dot--pending"></span>
-        Awaiting confirmation
+        Pending
       </p>
       <p v-else-if="split.status === 'unclaimed'" class="ats__status ats__status--unclaimed">
         <span class="ats__dot ats__dot--unclaimed"></span>
@@ -80,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h } from 'vue'
+import { computed } from 'vue'
 import type { Collaborator } from '../../types'
 
 const props = withDefaults(defineProps<{
@@ -103,42 +118,21 @@ defineEmits<{
   'copy-to': []
 }>()
 
-// Rejected shares return to the account holder (web semantics)
-const userShare = computed(() => Math.max(0, 100 - props.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0)))
-const pieColor = '#5f1fff'
+// Web SplitsEditor semantics:
+//  activeUserShare = what you hold today (only confirmed splits reduce it)
+//  stagedUserShare = what you'd hold once pending splits confirm (rejected excluded)
+const activeUserShare = computed(
+  () => 100 - props.splits.filter(s => s.status === 'active').reduce((sum, s) => sum + s.share, 0)
+)
+const stagedUserShare = computed(
+  () => Math.max(0, 100 - props.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
+)
+const pendingCount = computed(() => props.splits.filter(s => s.status === 'pending').length)
 
 // A saved split whose share was revised and is awaiting re-confirmation
 const hasPendingChange = (split: Collaborator): boolean =>
   split.originalShare !== undefined && split.originalShare !== split.share && split.status === 'pending'
 
-const pieColorFor = (split: Collaborator): string => {
-  if (split.status === 'active') return '#00d346'
-  if (split.status === 'pending') return '#f59e0b'
-  if (split.status === 'unclaimed') return '#f97316'
-  if (split.status === 'rejected') return '#ee404c'
-  return '#5f1fff'
-}
-
-// Tiny pie: a circle with a colored wedge sized to `share`
-const MiniPie = defineComponent({
-  props: {
-    share: { type: Number, required: true },
-    color: { type: String, default: '#5f1fff' },
-  },
-  setup(p) {
-    return () => {
-      const r = 8
-      const c = 2 * Math.PI * r
-      return h('svg', { width: 18, height: 18, viewBox: '0 0 20 20', style: 'transform: rotate(-90deg); flex-shrink: 0;' }, [
-        h('circle', { cx: 10, cy: 10, r, fill: 'none', stroke: '#efeffc', 'stroke-width': 4 }),
-        h('circle', {
-          cx: 10, cy: 10, r, fill: 'none', stroke: p.color, 'stroke-width': 4,
-          'stroke-dasharray': `${(Math.min(p.share, 100) / 100) * c} ${c}`,
-        }),
-      ])
-    }
-  },
-})
 </script>
 
 <style lang="scss" scoped>
@@ -193,6 +187,48 @@ const MiniPie = defineComponent({
   &__meta-purple {
     color: $color-brand-primary;
     font-weight: 600;
+  }
+
+  &__meta-sep {
+    margin: 0 0.25rem;
+    color: var(--ditto-grey);
+  }
+
+  &__meta-pending {
+    color: $color-amber-500;
+    font-weight: 600;
+  }
+
+  &__meta-tag {
+    margin-left: 0.25rem;
+    font-size: 10px;
+    color: $color-amber-500;
+  }
+
+  &__pending-note {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+    font-size: $text-xs;
+    color: $color-amber-600;
+    font-family: $font-satoshi;
+  }
+
+  &__unreg {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+    font-size: 11px;
+    line-height: 1.45;
+    color: $color-amber-600;
+    font-family: $font-satoshi;
+  }
+
+  &__unreg-icon {
+    flex-shrink: 0;
+    margin-top: 0.0625rem;
   }
 
   &__section-label {
