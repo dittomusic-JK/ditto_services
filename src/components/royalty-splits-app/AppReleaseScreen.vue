@@ -8,7 +8,6 @@
         <img :src="release.artwork" :alt="release.title" class="ars__artwork" />
         <div class="ars__release-info">
           <p class="ars__release-title">{{ release.title }}</p>
-          <p class="ars__release-label">Account Holder:</p>
           <p class="ars__release-holder">{{ release.accountHolder }}</p>
         </div>
       </div>
@@ -34,7 +33,15 @@
     </div>
 
     <!-- Tracks -->
-    <h3 class="ars__tracks-title">Tracks</h3>
+    <div class="ars__tracks-head">
+      <h3 class="ars__tracks-title">Tracks</h3>
+      <!-- Colour key (web RoyaltySplitsPage legend) -->
+      <div class="ars__legend">
+        <span class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--yours"></span>Yours</span>
+        <span class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--collab"></span>Collaborators</span>
+        <span class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--pending"></span>Pending</span>
+      </div>
+    </div>
 
     <button v-for="track in release.tracks" :key="track.trackId" class="ars__track" :class="trackRowClass(track)" @click="$emit('open-track', track.trackId)">
       <span class="ars__track-num">{{ track.trackNumber }}</span>
@@ -139,17 +146,11 @@ const trackRowClass = (t: TrackSplit): string => {
     letter-spacing: -0.01em;
   }
 
-  &__release-label {
-    font-size: 11px;
-    color: var(--ditto-grey);
-    font-family: $font-satoshi;
-    margin-top: 0.5rem;
-  }
-
   &__release-holder {
     font-size: $text-body;
     color: var(--blue);
     font-family: $font-satoshi;
+    margin-top: 0.375rem;
   }
 
   &__progress {
@@ -211,8 +212,38 @@ const trackRowClass = (t: TrackSplit): string => {
 
   &__note-b { color: var(--blue); }
 
-  &__tracks-title {
+  &__tracks-head {
     padding: 1.25rem 1.25rem 0.75rem;
+  }
+
+  &__legend {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  &__legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: $text-xs;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+  }
+
+  &__legend-dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 9999px;
+
+    &--yours { background: var(--brand-secondary); }
+    &--collab { background: var(--success); }
+    &--pending { background: $color-amber-500; }
+  }
+
+  &__tracks-title {
     font-size: $text-h4;
     font-weight: 500;
     color: var(--blue);
