@@ -251,6 +251,11 @@
   --light-grey: #313135;
   --lighter-grey: #2a2a2c;
   --medium-grey: #44444c;
+
+  /* Splits: the only themed value. Same hue as the light blue, lifted so it
+     balances against the confirmed green on a dark surface — #287ef7 passes
+     contrast (4.25:1) but sits at a third of the green's luminance and recedes. */
+  --split-yours: #5b9dff;
 }
 
 /* Base resets (replaces Tailwind preflight) */
