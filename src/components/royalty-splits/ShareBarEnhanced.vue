@@ -119,8 +119,8 @@ const actualUserShare = computed(() => 100 - props.confirmedShare)
     height: 100%;
     transition: all 0.15s ease;
 
-    &--user      { background: var(--brand-secondary); }
-    &--confirmed { background: var(--success); }
+    &--user      { background: var(--split-yours); }
+    &--confirmed { background: var(--split-confirmed); }
   }
 
   /* ---- Tooltip ---- */
@@ -160,8 +160,8 @@ const actualUserShare = computed(() => 100 - props.confirmedShare)
     height: 0.5rem;
     border-radius: 50%;
 
-    &--user      { background: var(--brand-secondary); }
-    &--confirmed { background: var(--success); }
+    &--user      { background: var(--split-yours); }
+    &--confirmed { background: var(--split-confirmed); }
   }
 
   &__tip-arrow {
@@ -181,9 +181,7 @@ const actualUserShare = computed(() => 100 - props.confirmedShare)
     font-weight: 600;
     font-family: $font-satoshi;
     white-space: nowrap;
-    color: var(--brand-secondary);
-
-    &--rls { color: var(--rls-accent); }
+    color: var(--split-yours);
   }
 
   /* ---- Badge wrapper (for hover tooltip) ---- */
@@ -206,18 +204,18 @@ const actualUserShare = computed(() => 100 - props.confirmedShare)
     cursor: help;
 
     &--pending {
-      background: $color-amber-100;
-      color: $color-amber-600;
+      background: rgba($color-amber-500, 0.16);
+      color: var(--split-pending);
     }
 
     &--unclaimed {
-      background: $color-orange-100;
-      color: $color-orange-600;
+      background: rgba($color-orange-500, 0.16);
+      color: var(--split-unclaimed);
     }
 
     &--unclaimed-rls {
-      background: rgba($color-warning, 0.2);
-      color: $color-warning;
+      background: rgba($color-orange-500, 0.2);
+      color: var(--split-unclaimed);
     }
   }
 }

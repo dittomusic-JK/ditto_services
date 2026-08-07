@@ -402,12 +402,12 @@ const handleConfirm = () => {
 
     &--you {
       background: rgba($color-brand-secondary, 0.1);
-      color: var(--brand-secondary);
+      color: var(--split-yours);
     }
 
     &--collab {
       background: rgba($color-success, 0.1);
-      color: var(--success);
+      color: var(--split-confirmed);
     }
   }
 

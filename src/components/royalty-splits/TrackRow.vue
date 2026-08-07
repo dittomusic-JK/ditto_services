@@ -142,7 +142,7 @@ const shareSegments = computed(() => {
   &__count-link {
     font-size: $text-sm;
     font-weight: 600;
-    color: var(--brand-secondary);
+    color: var(--split-yours);
     font-family: $font-satoshi;
 
     &:hover { text-decoration: underline; }

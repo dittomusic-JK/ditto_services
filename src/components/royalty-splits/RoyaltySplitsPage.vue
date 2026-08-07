@@ -1008,10 +1008,10 @@ const handleCancelUnsavedChanges = () => {
     height: 0.625rem;
     border-radius: 9999px;
 
-    &--yours { background: var(--brand-secondary); }
-    &--collab { background: var(--success); }
-    &--pending { background: $color-amber-500; }
-    &--unclaimed { background: var(--warning); }
+    &--yours { background: var(--split-yours); }
+    &--collab { background: var(--split-confirmed); }
+    &--pending { background: var(--split-pending); }
+    &--unclaimed { background: var(--split-unclaimed); }
   }
 
   /* RLS banner */

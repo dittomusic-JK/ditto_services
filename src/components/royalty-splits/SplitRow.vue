@@ -614,11 +614,11 @@ const emitUpdate = () => {
   height: 0.5rem;
 
   &--lg { width: 0.625rem; height: 0.625rem; margin-bottom: 0.25rem; }
-  &--active { background: var(--success); }
-  &--pending { background: $color-amber-500; }
-  &--rejected { background: var(--error); }
-  &--unclaimed { background: $color-orange-500; }
-  &--unclaimed-rls { background: var(--warning); }
+  &--active { background: var(--split-confirmed); }
+  &--pending { background: var(--split-pending); }
+  &--rejected { background: var(--split-rejected); }
+  &--unclaimed { background: var(--split-unclaimed); }
+  &--unclaimed-rls { background: var(--split-unclaimed); }
   &--default { background: var(--ditto-grey); }
 }
 
@@ -830,7 +830,7 @@ const emitUpdate = () => {
   &__pend-from {
     font-size: $text-xs;
     font-weight: 500;
-    color: var(--success);
+    color: var(--split-confirmed);
     font-family: $font-satoshi;
   }
 
@@ -839,10 +839,10 @@ const emitUpdate = () => {
   &__pend-to {
     font-size: $text-xs;
     font-weight: 500;
-    color: $color-amber-500;
+    color: var(--split-pending);
     font-family: $font-satoshi;
 
-    &--unsaved { color: var(--brand-secondary); }
+    &--unsaved { color: var(--split-yours); }
   }
 
   &__pend-badge {
@@ -856,7 +856,7 @@ const emitUpdate = () => {
     color: $color-amber-600;
     font-family: $font-satoshi;
 
-    &--unsaved { color: var(--brand-secondary); }
+    &--unsaved { color: var(--split-yours); }
   }
 
   &__actions {

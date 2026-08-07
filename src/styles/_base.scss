@@ -62,6 +62,15 @@
   --light-grey: #efeffc;
   --lighter-grey: #f9f9ff;
 
+  /* Royalty Splits — deliberately NOT themed. One palette across light and
+     dark so a hue never implies a change in meaning. Keep in sync with the
+     mobile app's --color-split-* tokens. */
+  --split-yours: #287ef7;
+  --split-confirmed: #00e785;
+  --split-pending: #f59e0b;
+  --split-unclaimed: #f97316;
+  --split-rejected: #ee404c;
+
   /* Status */
   --error: #ee404c;
   --warning: #ffb100;
