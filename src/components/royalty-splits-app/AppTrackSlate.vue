@@ -68,7 +68,7 @@
       </p>
       <p v-else-if="split.status === 'rejected'" class="ats__status ats__status--rejected">
         <span class="ats__dot ats__dot--rejected"></span>
-        Declined &mdash; their share stays with you. Edit to send a new offer.
+        Rejected. Edit to send a new offer.
       </p>
     </div>
 
