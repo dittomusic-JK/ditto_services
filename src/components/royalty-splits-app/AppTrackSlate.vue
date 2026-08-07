@@ -19,10 +19,6 @@
             </template>
           </span>
         </div>
-        <p v-if="pendingCount > 0" class="ats__pending-note">
-          <svg width="11" height="11" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M5 3V5.5L6.5 6.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          {{ pendingCount }} pending invite{{ pendingCount === 1 ? '' : 's' }} awaiting confirmation
-        </p>
       </div>
     </div>
 
@@ -36,7 +32,17 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
         </button>
       </div>
-      <p class="ats__collab-line">Email: <span class="ats__collab-email">{{ split.email }}</span></p>
+      <p class="ats__collab-line">
+        Email: <span class="ats__collab-email">{{ split.email }}</span>
+        <button
+          v-if="split.hasAccount === false"
+          class="ats__unreg-btn"
+          aria-label="Why can't this collaborator approve yet?"
+          @click="$emit('unregistered-info')"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5V8.5M8 10.5V10.51" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </p>
       <p class="ats__collab-line">
         Share:
         <!-- Share changed and awaiting re-confirmation (web pending-change parity) -->
@@ -48,11 +54,6 @@
         <span v-else class="ats__collab-share" :class="{ 'ats__collab-share--rejected': split.status === 'rejected' }">{{ split.share }}%</span>
       </p>
 
-      <!-- Not registered yet — web shows this on hover; mobile has no hover, so it's inline -->
-      <p v-if="split.hasAccount === false" class="ats__unreg">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" class="ats__unreg-icon"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5V8.5M8 10.5V10.51" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Not registered yet. They'll need to create a Ditto account to approve.
-      </p>
       <p v-if="split.status === 'active'" class="ats__status ats__status--active">
         <span class="ats__dot ats__dot--active"></span>
         Active{{ split.activeSince ? ` since ${split.activeSince}` : '' }}
@@ -116,6 +117,7 @@ defineEmits<{
   menu: [split: Collaborator]
   'copy-from': []
   'copy-to': []
+  'unregistered-info': []
 }>()
 
 // Web SplitsEditor semantics:
@@ -127,7 +129,6 @@ const activeUserShare = computed(
 const stagedUserShare = computed(
   () => Math.max(0, 100 - props.splits.filter(s => s.status !== 'rejected').reduce((sum, s) => sum + s.share, 0))
 )
-const pendingCount = computed(() => props.splits.filter(s => s.status === 'pending').length)
 
 // A saved split whose share was revised and is awaiting re-confirmation
 const hasPendingChange = (split: Collaborator): boolean =>
@@ -205,30 +206,13 @@ const hasPendingChange = (split: Collaborator): boolean =>
     color: $color-amber-500;
   }
 
-  &__pending-note {
-    display: flex;
+  &__unreg-btn {
+    display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    margin-top: 0.375rem;
-    font-size: $text-xs;
-    color: $color-amber-600;
-    font-family: $font-satoshi;
-  }
-
-  &__unreg {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.375rem;
-    margin-top: 0.5rem;
-    font-size: 11px;
-    line-height: 1.45;
-    color: $color-amber-600;
-    font-family: $font-satoshi;
-  }
-
-  &__unreg-icon {
+    color: $color-amber-500;
+    cursor: pointer;
+    padding: 0.125rem;
     flex-shrink: 0;
-    margin-top: 0.0625rem;
   }
 
   &__section-label {

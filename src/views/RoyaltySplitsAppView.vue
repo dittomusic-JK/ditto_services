@@ -35,6 +35,7 @@
           @menu="openMenu"
           @copy-from="screen = 'copyFrom'"
           @copy-to="openCopyTo"
+          @unregistered-info="showUnregisteredInfo"
         />
 
         <!-- Copy splits from another track -->
@@ -125,9 +126,10 @@
 
         <!-- Green toast -->
         <transition name="rsa-toast">
-          <div v-if="toast" class="rsa__toast">
+          <div v-if="toast" class="rsa__toast" :class="{ 'rsa__toast--info': toastType === 'info' }">
             <span class="rsa__toast-check">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              <svg v-if="toastType === 'info'" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 5V8.5M8 10.5V10.51" stroke-linecap="round"/></svg>
+              <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
             </span>
             <p class="rsa__toast-text">{{ toast }}</p>
             <button class="rsa__toast-close" @click="toast = ''" aria-label="Dismiss">
@@ -528,12 +530,19 @@ const applyEditEmail = (payload: { name: string; email: string; share: number; a
 
 // ---- Toast ----
 const toast = ref('')
+const toastType = ref<'success' | 'info'>('success')
 let toastTimer: ReturnType<typeof setTimeout> | undefined
-const showToast = (msg: string) => {
+const showToast = (msg: string, type: 'success' | 'info' = 'success') => {
   toast.value = msg
+  toastType.value = type
   if (toastTimer) clearTimeout(toastTimer)
   toastTimer = setTimeout(() => { toast.value = '' }, 4200)
 }
+
+// Tapping the ⓘ beside an unregistered collaborator's email — web shows this
+// as a hover tooltip, which mobile has no equivalent for.
+const showUnregisteredInfo = () =>
+  showToast("Not registered yet. They'll need to create a Ditto account to approve.", 'info')
 
 // ---- App chrome assets (copied from the mobile app's src/assets) ----
 const dropdownIcon = `<svg viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg"><path stroke="none" d="M 5.000504 5.150012 C 4.877594 5.150012 4.761719 5.105334 4.674255 5.024219 L 0.99086 1.611194 C 0.90007 1.527087 0.850052 1.414355 0.850021 1.29375 C 0.849976 1.173083 0.899979 1.060229 0.990814 0.976001 C 1.078552 0.894702 1.194321 0.849963 1.316849 0.849963 C 1.439392 0.849963 1.555161 0.894702 1.642838 0.97594 L 5.000015 4.086719 L 8.357178 0.97594 C 8.44487 0.894702 8.560623 0.849963 8.683151 0.849963 C 8.805679 0.849963 8.921448 0.894702 9.009109 0.97594 C 9.100006 1.060229 9.15004 1.173083 9.150009 1.29375 C 9.149979 1.414355 9.099915 1.527087 9.009064 1.611194 L 5.325714 5.02428 C 5.240021 5.105029 5.124191 5.150012 5.000504 5.150012 Z"/></svg>`;
@@ -700,6 +709,16 @@ const tabs = [
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+  }
+
+  /* Informational rather than success — amber, matching the ⓘ indicator */
+  &__toast--info {
+    background: #fff8e8;
+    border-color: rgba($color-amber-500, 0.4);
+
+    .rsa__toast-check { background: $color-amber-500; }
+    .rsa__toast-text { color: $color-amber-800; }
+    .rsa__toast-close { color: $color-amber-600; }
   }
 
   &__toast-text {
