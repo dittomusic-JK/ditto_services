@@ -16,8 +16,8 @@
           <p class="se__summary-val" :class="{ 'se__summary-val--rls': isRLS }">{{ activeUserShare }}%</p>
           <template v-if="!isRLS && (hasPendingChanges || hasStagedEdit) && activeUserShare !== currentUserShare">
             <span class="se__summary-sep">&gt;</span>
-            <p class="se__summary-pending" :class="{ 'se__summary-pending--unsaved': hasStagedEdit }">{{ currentUserShare }}%</p>
-            <span class="se__summary-pending-tag" :class="{ 'se__summary-pending-tag--unsaved': hasStagedEdit }">{{ hasStagedEdit ? 'Unsaved' : 'Pending' }}</span>
+            <p class="se__summary-pending">{{ currentUserShare }}%</p>
+            <span class="se__summary-pending-tag">{{ hasStagedEdit ? 'Unsaved' : 'Pending' }}</span>
           </template>
         </div>
       </div>
@@ -452,16 +452,12 @@ const handleClose = () => {
     font-weight: 700;
     color: $color-amber-500;
     font-family: $font-satoshi;
-
-    &--unsaved { color: var(--split-yours); }
   }
 
   &__summary-pending-tag {
     font-size: 10px;
     color: $color-amber-500;
     font-family: $font-satoshi;
-
-    &--unsaved { color: var(--split-yours); }
   }
 
   /* ---- Header ---- */

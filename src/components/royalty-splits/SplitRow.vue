@@ -107,11 +107,11 @@
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="sr__pend-arrow">
               <path d="M4 6H8M8 6L6 4M8 6L6 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <span class="sr__pend-to" :class="{ 'sr__pend-to--unsaved': isEdited }">{{ share }}%</span>
+            <span class="sr__pend-to">{{ share }}%</span>
           </div>
           <div class="sr__pend-badge">
-            <div class="sr__dot" :class="isEdited ? 'sr__dot--unsaved' : 'sr__dot--pending'" />
-            <span class="sr__pend-label" :class="{ 'sr__pend-label--unsaved': isEdited }">{{ pendChangeLabel }}</span>
+            <div class="sr__dot sr__dot--pending" />
+            <span class="sr__pend-label">{{ pendChangeLabel }}</span>
           </div>
         </template>
         <template v-else>
@@ -841,8 +841,6 @@ const emitUpdate = () => {
     font-weight: 500;
     color: var(--split-pending);
     font-family: $font-satoshi;
-
-    &--unsaved { color: var(--split-yours); }
   }
 
   &__pend-badge {
@@ -855,8 +853,6 @@ const emitUpdate = () => {
     font-size: 10px;
     color: $color-amber-600;
     font-family: $font-satoshi;
-
-    &--unsaved { color: var(--split-yours); }
   }
 
   &__actions {

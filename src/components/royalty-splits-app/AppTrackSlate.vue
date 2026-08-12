@@ -87,11 +87,6 @@
     <button v-if="hasCopySources" class="ats__add-link ats__add-link--copy" @click="$emit('copy-from')">Copy splits from another track</button>
     <button v-if="splits.length > 0" class="ats__add-link ats__add-link--copy" @click="$emit('copy-to')">Copy these splits to other tracks</button>
 
-    <!-- Save -->
-    <button class="ats__save" :disabled="!dirty" @click="$emit('save')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-7 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H6V5h9v4z"/></svg>
-      Save Royalty Split
-    </button>
   </div>
 </template>
 
@@ -103,17 +98,14 @@ const props = withDefaults(defineProps<{
   title: string
   trackNumber?: number
   splits: Collaborator[]
-  dirty?: boolean
   hasCopySources?: boolean
 }>(), {
-  dirty: false,
   hasCopySources: false,
 })
 
 defineEmits<{
   back: []
   add: []
-  save: []
   menu: [split: Collaborator]
   'copy-from': []
   'copy-to': []
@@ -356,6 +348,8 @@ const hasPendingChange = (split: Collaborator): boolean =>
     display: block;
     margin: 1.25rem 1.25rem 0;
 
+    &:last-child { margin-bottom: 1.5rem; }
+
     &--copy {
       margin-top: 0.875rem;
       color: var(--ditto-grey);
@@ -371,26 +365,5 @@ const hasPendingChange = (split: Collaborator): boolean =>
     &:hover { color: $color-brand-primary; }
   }
 
-  &__save {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    width: calc(100% - 2.5rem);
-    margin: 1.5rem 1.25rem 0;
-    padding: 0.875rem 1rem;
-    border: 1.5px solid var(--brand-secondary);
-    border-radius: 9999px;
-    background: #fff;
-    font-size: $text-sm;
-    font-weight: 500;
-    color: var(--brand-secondary);
-    font-family: $font-satoshi;
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-
-    &:hover { background: rgba($color-brand-secondary, 0.05); }
-    &:disabled { opacity: 0.4; cursor: not-allowed; }
-  }
 }
 </style>

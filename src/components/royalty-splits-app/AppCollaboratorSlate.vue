@@ -29,7 +29,6 @@
 
         <!-- Saved collaborator suggestions (web autocomplete parity) -->
         <div v-if="!nameLocked && showSuggestions && filteredCollaborators.length > 0" class="acs__suggestions">
-          <p class="acs__suggestions-label">Saved collaborators</p>
           <button
             v-for="collab in filteredCollaborators"
             :key="collab.email"
@@ -37,11 +36,8 @@
             class="acs__suggestion"
             @mousedown.prevent="selectCollaborator(collab)"
           >
-            <span class="acs__suggestion-avatar">{{ collab.name.slice(0, 1).toUpperCase() }}</span>
-            <span class="acs__suggestion-body">
-              <span class="acs__suggestion-name">{{ collab.name }}</span>
-              <span class="acs__suggestion-email">{{ collab.email }}</span>
-            </span>
+            <span class="acs__suggestion-name">{{ collab.name }}</span>
+            <span class="acs__suggestion-email">{{ collab.email }}</span>
           </button>
         </div>
       </div>
@@ -269,20 +265,11 @@ const confirm = () => {
     overflow-y: auto;
   }
 
-  &__suggestions-label {
-    padding: 0.375rem 0.875rem 0.25rem;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--ditto-grey);
-    font-family: $font-satoshi;
-  }
-
   &__suggestion {
     width: 100%;
     display: flex;
-    align-items: center;
-    gap: 0.625rem;
+    align-items: baseline;
+    gap: 0.5rem;
     text-align: left;
     padding: 0.5rem 0.875rem;
     cursor: pointer;
@@ -290,33 +277,15 @@ const confirm = () => {
     &:hover, &:active { background: var(--lighter-grey); }
   }
 
-  &__suggestion-avatar {
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: 9999px;
-    background: var(--light-grey);
-    color: $color-brand-primary;
-    font-size: $text-xs;
-    font-weight: 700;
-    font-family: $font-satoshi;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  &__suggestion-body { min-width: 0; }
-
   &__suggestion-name {
-    display: block;
     font-size: $text-sm;
     font-weight: 500;
     color: var(--blue);
     font-family: $font-satoshi;
+    flex-shrink: 0;
   }
 
   &__suggestion-email {
-    display: block;
     font-size: $text-xs;
     color: var(--ditto-grey);
     font-family: $font-satoshi;

@@ -1,6 +1,17 @@
 <template>
   <div class="rsa">
-    <p class="rsa__hint">App-native prototype &mdash; tap a track to open its split slate. Save returns you to the release.</p>
+    <p class="rsa__hint">App-native prototype &mdash; tap a track to open its split slate. Changes save as you make them.</p>
+
+    <div class="rsa__demo">
+      <span class="rsa__demo-label">Demo:</span>
+      <button
+        v-for="mode in (['populated', 'empty'] as const)"
+        :key="mode"
+        class="rsa__demo-tab"
+        :class="{ 'rsa__demo-tab--active': demo === mode }"
+        @click="setDemo(mode)"
+      >{{ mode === 'populated' ? 'Populated' : 'Empty' }}</button>
+    </div>
 
     <!-- Phone -->
     <div class="rsa__phone">
@@ -27,11 +38,9 @@
           :title="slateTitle"
           :track-number="currentTrack?.trackNumber"
           :splits="slateSplits"
-          :dirty="slateDirty"
           :has-copy-sources="copySources.length > 0"
-          @back="requestLeave"
+          @back="closeSlate"
           @add="screen = 'add'"
-          @save="saveSlate"
           @menu="openMenu"
           @copy-from="screen = 'copyFrom'"
           @copy-to="openCopyTo"
@@ -146,20 +155,12 @@
           @select="handleMenuSelect"
         />
 
-        <!-- Unsaved changes guard -->
-        <AppActionSheet
-          v-if="leaveGuardOpen"
-          :items="leaveGuardItems"
-          @close="leaveGuardOpen = false"
-          @select="handleLeaveGuard"
-        />
-
-        <!-- First split: offer to copy to the other tracks -->
-        <AppActionSheet
+        <!-- First split on the release — same explainer as web -->
+        <AppFirstSplitModal
           v-if="firstSplitPromptOpen"
-          :items="firstSplitItems"
+          :other-tracks-count="release.tracks.length - 1"
           @close="firstSplitPromptOpen = false"
-          @select="handleFirstSplitPrompt"
+          @copy-to-all="handleCopyToAllFromFirstSplit"
         />
       </div>
 
@@ -184,10 +185,11 @@ import AppReleaseScreen from '../components/royalty-splits-app/AppReleaseScreen.
 import AppTrackSlate from '../components/royalty-splits-app/AppTrackSlate.vue'
 import AppCollaboratorSlate from '../components/royalty-splits-app/AppCollaboratorSlate.vue'
 import AppActionSheet from '../components/royalty-splits-app/AppActionSheet.vue'
+import AppFirstSplitModal from '../components/royalty-splits-app/AppFirstSplitModal.vue'
 import type { SheetItem } from '../components/royalty-splits-app/AppActionSheet.vue'
 
 // ---- Demo data: identical to the web version's populated release ----
-const release = reactive<Release>({
+const populatedRelease: Release = ({
   id: '1',
   title: 'Midnight Sessions EP',
   artwork: 'https://picsum.photos/seed/album2/400/400',
@@ -251,11 +253,32 @@ const release = reactive<Release>({
   ],
 })
 
+// Empty variant so the first-split flow is reviewable (web has the same toggle)
+const emptyRelease: Release = {
+  ...populatedRelease,
+  tracks: populatedRelease.tracks.map(t => ({ ...t, splits: [] })),
+}
+
+const demo = ref<'populated' | 'empty'>('populated')
+const buildRelease = (mode: 'populated' | 'empty'): Release =>
+  JSON.parse(JSON.stringify(mode === 'empty' ? emptyRelease : populatedRelease))
+
+const release = reactive<Release>(buildRelease('populated'))
+
+const setDemo = (mode: 'populated' | 'empty') => {
+  demo.value = mode
+  Object.assign(release, buildRelease(mode))
+  screen.value = 'release'
+  currentTrackId.value = null
+  menuOpen.value = false
+  firstSplitPromptOpen.value = false
+  toast.value = ''
+}
+
 // ---- Screen state ----
 type Screen = 'release' | 'track' | 'add' | 'edit' | 'editEmail' | 'copyFrom' | 'copyTo'
 const screen = ref<Screen>('release')
 const currentTrackId = ref<string | null>(null)
-const slateDirty = ref(false)
 const screenRef = ref<HTMLElement | null>(null)
 
 const currentTrack = computed(() => release.tracks.find(t => t.trackId === currentTrackId.value))
@@ -296,7 +319,6 @@ const editEmailOtherTracks = computed(() => {
 
 const openTrack = (trackId: string) => {
   currentTrackId.value = trackId
-  slateDirty.value = false
   screen.value = 'track'
   scrollTop()
 }
@@ -305,35 +327,6 @@ const closeSlate = () => {
   screen.value = 'release'
   menuOpen.value = false
   scrollTop()
-}
-
-// Back from the slate: confirm when there are unsaved changes (web parity)
-const leaveGuardOpen = ref(false)
-const leaveGuardItems: SheetItem[] = [
-  { id: 'saveLeave', label: 'Save & leave', icon: 'save' },
-  { id: 'discard', label: 'Discard changes', icon: 'trash' },
-  { id: 'stay', label: 'Keep editing', icon: 'x' },
-]
-
-const requestLeave = () => {
-  if (slateDirty.value) {
-    leaveGuardOpen.value = true
-  } else {
-    closeSlate()
-  }
-}
-
-const handleLeaveGuard = (id: string) => {
-  leaveGuardOpen.value = false
-  if (id === 'saveLeave') {
-    saveSlate()
-  } else if (id === 'discard') {
-    // Drop unsaved (new_*) additions from this track
-    const track = currentTrack.value
-    if (track) track.splits = track.splits.filter(sp => !sp.id.startsWith('new_'))
-    slateDirty.value = false
-    closeSlate()
-  }
 }
 
 // ---- Add collaborator ----
@@ -347,10 +340,17 @@ const addCollaborator = (payload: { name: string; email: string; share: number; 
     status: 'pending',
     hasAccount: true,
   }
+  // Saved on the spot — there is no separate save step
+  const wasFirstOnRelease = release.tracks.every(t => t.splits.length === 0)
   currentTrack.value?.splits.push(split)
-  slateDirty.value = true
   screen.value = 'track'
   scrollTop()
+
+  if (wasFirstOnRelease && release.tracks.length > 1) {
+    firstSplitPromptOpen.value = true
+  } else {
+    showToast("Split saved! We've sent an email to your collaborators. When they accept the offer, the split will be confirmed.")
+  }
 }
 
 // ---- Copy splits TO other tracks (web TrackGroup copy-to parity) ----
@@ -405,46 +405,29 @@ const copyFromTrack = (sourceId: string) => {
     activeSince: undefined,
     originalShare: undefined,
   }))
-  slateDirty.value = true
   screen.value = 'track'
   scrollTop()
+  showToast(`Splits copied from ${source.trackName}.`)
 }
 
-// ---- Save ----
+// ---- First split on the release ----
 const firstSplitPromptOpen = ref(false)
-const firstSplitItems = computed<SheetItem[]>(() => [
-  { id: 'copyAll', label: `Copy this split to all ${release.tracks.length - 1} other tracks`, icon: 'copy' },
-  { id: 'done', label: 'Got it', icon: 'x' },
-])
 
-const saveSlate = () => {
-  const savedTrack = currentTrack.value
-  // First split on the release? Offer to copy it everywhere (web FirstSplitModal parity)
-  const othersHaveSplits = release.tracks.some(t => t.trackId !== savedTrack?.trackId && t.splits.length > 0)
-  const isFirstSplit = !othersHaveSplits && (savedTrack?.splits.length ?? 0) > 0 && release.tracks.length > 1
-  slateDirty.value = false
-  closeSlate()
-  showToast("Split saved! We've sent an email to your collaborators. When they accept the offer, the split will be confirmed.")
-  if (isFirstSplit) {
-    firstSplitPromptOpen.value = true
-  }
-}
-
-const handleFirstSplitPrompt = (id: string) => {
+const handleCopyToAllFromFirstSplit = () => {
   firstSplitPromptOpen.value = false
-  const source = release.tracks.find(t => t.splits.length > 0)
-  if (id === 'copyAll' && source) {
-    release.tracks.forEach(track => {
-      if (track.trackId === source.trackId) return
-      track.splits = source.splits.map(sp => ({
-        ...sp,
-        id: `new_${nextId++}`,
-        status: 'pending' as const,
-        activeSince: undefined,
-      }))
-    })
-    showToast(`Splits copied to ${release.tracks.length - 1} other tracks.`)
-  }
+  const source = currentTrack.value
+  if (!source) return
+  release.tracks.forEach(track => {
+    if (track.trackId === source.trackId) return
+    track.splits = source.splits.map(sp => ({
+      ...sp,
+      id: `new_${nextId++}`,
+      status: 'pending' as const,
+      activeSince: undefined,
+      originalShare: undefined,
+    }))
+  })
+  showToast(`Splits copied to ${release.tracks.length - 1} other tracks.`)
 }
 
 // ---- Collaborator menu ----
@@ -586,6 +569,34 @@ const tabs = [
     font-family: $font-satoshi;
     margin-bottom: 1.25rem;
     text-align: center;
+  }
+
+  &__demo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: $text-sm;
+    font-family: $font-satoshi;
+  }
+
+  &__demo-label { color: var(--ditto-grey); }
+
+  &__demo-tab {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    background: #fff;
+    color: var(--ditto-grey);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover { background: var(--light-grey); }
+
+    &--active {
+      background: $color-brand-primary;
+      color: #fff;
+      &:hover { background: $color-brand-primary; }
+    }
   }
 
   &__phone {
