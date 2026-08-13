@@ -271,7 +271,7 @@ const populatedRelease: Release = ({
       trackId: 't5', trackNumber: 5, trackName: 'Midnight Drive', userShare: 65,
       splits: [
         { id: 's5', name: 'Geri Adams', email: 'geri101@gmail.com', share: 20, status: 'active', hasAccount: true, activeSince: '5th May 2025' },
-        { id: 's6', name: 'Bob Johnson', email: 'bob@example.com', share: 15, status: 'pending', hasAccount: false }, // same email as t6 — demos apply-to-all in Edit Email
+        { id: 's6', name: 'Bob Johnson', email: 'bob@example.com', share: 15, status: 'unclaimed', hasAccount: false }, // unclaimed = no Ditto account; same email as t6, so Edit Email can demo apply-to-all
       ],
     },
     {
@@ -508,21 +508,12 @@ const openMenu = (split: Collaborator) => {
   menuOpen.value = true
 }
 
-// Editing the email is for anyone who can't have accepted yet — an unclaimed
-// collaborator, or a pending one who isn't registered (the invite may have gone
-// to the wrong address). Web applies the same rule.
-const canEditEmail = (s: Collaborator | null) =>
-  !!s && (s.status === 'unclaimed' || (s.status === 'pending' && s.hasAccount === false))
-
 const menuItems = computed<SheetItem[]>(() => {
-  const t = menuTarget.value
   const items: SheetItem[] = [{ id: 'edit', label: 'Edit Split', icon: 'edit' }]
-  if (canEditEmail(t)) {
+  if (menuTarget.value?.status === 'unclaimed') {
     items.push({ id: 'editEmail', label: 'Edit Email', icon: 'mail' })
-  }
-  if (t?.status === 'unclaimed') {
     items.push({ id: 'resend', label: 'Resend Invitation', icon: 'send' })
-  } else if (t?.status === 'pending') {
+  } else if (menuTarget.value?.status === 'pending') {
     items.push({ id: 'resend', label: 'Resend Confirmation Email', icon: 'send' })
   }
   items.push({ id: 'remove', label: 'Remove Collaborator', icon: 'trash' })
