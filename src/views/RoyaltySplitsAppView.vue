@@ -42,7 +42,7 @@
           @back="closeSlate"
           @add="screen = 'add'"
           @menu="openMenu"
-          @copy-from="screen = 'copyFrom'"
+          @copy-from="openCopyFrom"
           @copy-to="openCopyTo"
           @unregistered-info="showUnregisteredInfo"
         />
@@ -55,15 +55,43 @@
             </button>
             <h2 class="rsa__copy-title">Copy Splits From</h2>
           </div>
-          <p class="rsa__copy-hint">Copying replaces this track's current splits. Collaborators are re-invited to confirm.</p>
-          <button v-for="source in copySources" :key="source.trackId" class="rsa__copy-row" @click="copyFromTrack(source.trackId)">
+          <p class="rsa__copy-label">Select a track to copy splits from:</p>
+
+          <button
+            v-for="source in copySources"
+            :key="source.trackId"
+            class="rsa__copy-row"
+            :class="{ 'rsa__copy-row--sel': copyFromSelection === source.trackId }"
+            @click="copyFromSelection = source.trackId"
+          >
+            <span class="rsa__copy-radio" :class="{ 'rsa__copy-radio--on': copyFromSelection === source.trackId }" />
             <span class="rsa__copy-num">{{ source.trackNumber }}</span>
             <span class="rsa__copy-body">
               <span class="rsa__copy-name">{{ source.trackName }}</span>
-              <span class="rsa__copy-meta">{{ source.splits.map(sp => `${sp.name} ${sp.share}%`).join(' · ') }}</span>
+              <span class="rsa__copy-meta">{{ source.splits.length }} split{{ source.splits.length === 1 ? '' : 's' }}</span>
             </span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="rsa__copy-chevron"><polyline points="9,18 15,12 9,6"/></svg>
           </button>
+
+          <!-- Pinned so choosing a source reveals the summary without scrolling -->
+          <div class="rsa__copy-foot">
+            <div v-if="copyFromSource" class="rsa__copy-preview">
+              <p class="rsa__copy-preview-label">Copying from <strong>{{ copyFromSource.trackName }}</strong></p>
+              <div class="rsa__copy-tags">
+                <span class="rsa__copy-tag rsa__copy-tag--you">You {{ copyFromSource.userShare }}%</span>
+                <span v-for="sp in copyFromSource.splits" :key="sp.id" class="rsa__copy-tag">{{ sp.name }} {{ sp.share }}%</span>
+              </div>
+            </div>
+
+            <div v-if="copyFromSource && (currentTrack?.splits.length ?? 0) > 0" class="rsa__copy-warn">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="10" r="8"/><path d="M10 6v4M10 14h.01"/></svg>
+              <p><strong>This track has existing splits.</strong> Confirming will replace them with the new splits.</p>
+            </div>
+
+            <div class="rsa__copy-actions">
+              <button class="rsa__copy-cancel" @click="screen = 'track'">Cancel</button>
+              <button class="rsa__copy-confirm" :disabled="!copyFromSelection" @click="confirmCopyFrom">Copy Splits</button>
+            </div>
+          </div>
         </div>
 
         <!-- Copy these splits to other tracks -->
@@ -74,7 +102,21 @@
             </button>
             <h2 class="rsa__copy-title">Copy Splits To</h2>
           </div>
-          <p class="rsa__copy-hint">Copying replaces each selected track's splits. Collaborators are invited to confirm.</p>
+          <!-- What's being copied -->
+          <div v-if="currentTrack" class="rsa__copy-preview">
+            <p class="rsa__copy-preview-label">Copying from <strong>{{ currentTrack.trackName }}</strong></p>
+            <div class="rsa__copy-tags">
+              <span class="rsa__copy-tag rsa__copy-tag--you">You {{ currentTrack.userShare }}%</span>
+              <span v-for="sp in currentTrack.splits" :key="sp.id" class="rsa__copy-tag">{{ sp.name }} {{ sp.share }}%</span>
+            </div>
+          </div>
+
+          <div class="rsa__copy-sel-head">
+            <p class="rsa__copy-label">Select tracks to copy to:</p>
+            <button class="rsa__copy-all" @click="toggleAllCopyTargets">
+              {{ copyToSelection.length === copyTargets.length ? 'Deselect all' : 'Select all' }}
+            </button>
+          </div>
 
           <button v-for="target in copyTargets" :key="target.trackId" class="rsa__copy-row" @click="toggleCopyTarget(target.trackId)">
             <span class="rsa__copy-check" :class="{ 'rsa__copy-check--on': copyToSelection.includes(target.trackId) }">
@@ -87,11 +129,21 @@
             </span>
           </button>
 
-          <div class="rsa__copy-actions">
-            <button class="rsa__copy-all" @click="toggleAllCopyTargets">{{ copyToSelection.length === copyTargets.length ? 'Deselect all' : 'Select all' }}</button>
-            <button class="rsa__copy-confirm" :disabled="copyToSelection.length === 0" @click="confirmCopyTo">
-              Copy to {{ copyToSelection.length }} track{{ copyToSelection.length === 1 ? '' : 's' }}
-            </button>
+          <div class="rsa__copy-foot">
+            <div v-if="copyToConflictCount > 0" class="rsa__copy-warn">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="10" r="8"/><path d="M10 6v4M10 14h.01"/></svg>
+              <p>
+                <strong>{{ copyToConflictCount }} track{{ copyToConflictCount === 1 ? ' has' : 's have' }} existing splits.</strong>
+                Confirming will replace them with the new splits.
+              </p>
+            </div>
+
+            <div class="rsa__copy-actions">
+              <button class="rsa__copy-cancel" @click="screen = 'track'">Cancel</button>
+              <button class="rsa__copy-confirm" :disabled="copyToSelection.length === 0" @click="confirmCopyTo">
+                Copy to {{ copyToSelection.length }} track{{ copyToSelection.length === 1 ? '' : 's' }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -219,7 +271,7 @@ const populatedRelease: Release = ({
       trackId: 't5', trackNumber: 5, trackName: 'Midnight Drive', userShare: 65,
       splits: [
         { id: 's5', name: 'Geri Adams', email: 'geri101@gmail.com', share: 20, status: 'active', hasAccount: true, activeSince: '5th May 2025' },
-        { id: 's6', name: 'New Collaborator', email: 'newcollab@email.com', share: 15, status: 'pending', hasAccount: false },
+        { id: 's6', name: 'Bob Johnson', email: 'bob@example.com', share: 15, status: 'pending', hasAccount: false }, // same email as t6 — demos apply-to-all in Edit Email
       ],
     },
     {
@@ -368,6 +420,11 @@ const toggleCopyTarget = (trackId: string) => {
   i > -1 ? copyToSelection.value.splice(i, 1) : copyToSelection.value.push(trackId)
 }
 
+// Selected targets that would lose splits — drives the warning at the foot of the screen
+const copyToConflictCount = computed(
+  () => copyTargets.value.filter(t => copyToSelection.value.includes(t.trackId) && t.splits.length > 0).length
+)
+
 const toggleAllCopyTargets = () => {
   copyToSelection.value = copyToSelection.value.length === copyTargets.value.length
     ? []
@@ -394,8 +451,20 @@ const confirmCopyTo = () => {
 }
 
 // ---- Copy splits from another track (web parity) ----
-const copyFromTrack = (sourceId: string) => {
-  const source = release.tracks.find(t => t.trackId === sourceId)
+// Picking a track only previews it; the copy happens on Copy Splits.
+const copyFromSelection = ref<string | null>(null)
+const copyFromSource = computed(() =>
+  release.tracks.find(t => t.trackId === copyFromSelection.value) ?? null
+)
+
+const openCopyFrom = () => {
+  copyFromSelection.value = null
+  screen.value = 'copyFrom'
+  scrollTop()
+}
+
+const confirmCopyFrom = () => {
+  const source = copyFromSource.value
   const target = currentTrack.value
   if (!source || !target) return
   target.splits = source.splits.map(sp => ({
@@ -439,12 +508,21 @@ const openMenu = (split: Collaborator) => {
   menuOpen.value = true
 }
 
+// Editing the email is for anyone who can't have accepted yet — an unclaimed
+// collaborator, or a pending one who isn't registered (the invite may have gone
+// to the wrong address). Web applies the same rule.
+const canEditEmail = (s: Collaborator | null) =>
+  !!s && (s.status === 'unclaimed' || (s.status === 'pending' && s.hasAccount === false))
+
 const menuItems = computed<SheetItem[]>(() => {
+  const t = menuTarget.value
   const items: SheetItem[] = [{ id: 'edit', label: 'Edit Split', icon: 'edit' }]
-  if (menuTarget.value?.status === 'unclaimed') {
+  if (canEditEmail(t)) {
     items.push({ id: 'editEmail', label: 'Edit Email', icon: 'mail' })
+  }
+  if (t?.status === 'unclaimed') {
     items.push({ id: 'resend', label: 'Resend Invitation', icon: 'send' })
-  } else if (menuTarget.value?.status === 'pending') {
+  } else if (t?.status === 'pending') {
     items.push({ id: 'resend', label: 'Resend Confirmation Email', icon: 'send' })
   }
   items.push({ id: 'remove', label: 'Remove Collaborator', icon: 'trash' })
@@ -771,12 +849,87 @@ const tabs = [
     letter-spacing: -0.03em;
   }
 
-  &__copy-hint {
-    padding: 0 1.25rem 1rem;
+  &__copy-label {
+    padding: 0 1.25rem 0.75rem;
     font-size: $text-xs;
     color: var(--ditto-grey);
     font-family: $font-satoshi;
     line-height: 1.5;
+  }
+
+  &__copy-sel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem 0;
+
+    .rsa__copy-label { padding: 0 0 0.75rem; }
+  }
+
+  /* ---- Source preview (what's being copied) ---- */
+  &__copy-preview {
+    padding: 1rem 1.25rem;
+    background: var(--lighter-grey);
+    border-top: 1px solid var(--faded-grey);
+    border-bottom: 1px solid var(--faded-grey);
+  }
+
+  &__copy-preview-label {
+    font-size: $text-xs;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
+    margin-bottom: 0.625rem;
+
+    strong {
+      font-weight: 600;
+      color: var(--blue);
+    }
+  }
+
+  &__copy-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  &__copy-tag {
+    padding: 0.3125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: $text-xs;
+    font-weight: 500;
+    font-family: $font-satoshi;
+    background: rgba($color-success, 0.1);
+    color: var(--split-confirmed);
+    white-space: nowrap;
+
+    &--you {
+      background: rgba($color-brand-secondary, 0.1);
+      color: var(--split-yours);
+    }
+  }
+
+  /* ---- Replacement warning ---- */
+  &__copy-warn {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    margin: 1rem 1.25rem 0;
+    padding: 0.75rem 0.875rem;
+    border-radius: 0.75rem;
+    background: $color-amber-50;
+    border: 1px solid $color-amber-100;
+    color: $color-amber-800;
+
+    svg { flex-shrink: 0; margin-top: 0.0625rem; }
+
+    p {
+      font-size: $text-xs;
+      font-family: $font-satoshi;
+      line-height: 1.5;
+    }
+
+    strong { font-weight: 600; }
   }
 
   &__copy-row {
@@ -791,6 +944,8 @@ const tabs = [
 
     &:active { background: var(--lighter-grey); }
     &:last-child { border-bottom: 1px solid var(--faded-grey); }
+
+    &--sel { background: rgba($color-brand-primary, 0.04); }
   }
 
   &__copy-num {
@@ -829,9 +984,19 @@ const tabs = [
     text-overflow: ellipsis;
   }
 
-  &__copy-chevron {
-    color: var(--darkening-grey);
+  &__copy-radio {
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 50%;
+    border: 2px solid var(--faded-grey);
+    background: #fff;
     flex-shrink: 0;
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &--on {
+      border-color: $color-brand-primary;
+      box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 1rem $color-brand-primary;
+    }
   }
 
   &__copy-check {
@@ -853,6 +1018,17 @@ const tabs = [
     }
   }
 
+  &__copy-foot {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    border-top: 1px solid var(--faded-grey);
+    box-shadow: 0 -4px 12px rgba(16, 31, 60, 0.06);
+
+    /* Already separated by the sticky edge */
+    .rsa__copy-preview { border-top: 0; }
+  }
+
   &__copy-actions {
     display: flex;
     align-items: center;
@@ -861,15 +1037,29 @@ const tabs = [
   }
 
   &__copy-all {
-    font-size: $text-sm;
-    color: var(--ditto-grey);
+    font-size: $text-xs;
+    font-weight: 500;
+    color: $color-brand-primary;
     font-family: $font-satoshi;
-    text-decoration: underline;
-    text-underline-offset: 3px;
     cursor: pointer;
     flex-shrink: 0;
 
-    &:hover { color: $color-brand-primary; }
+    &:active { opacity: 0.6; }
+  }
+
+  &__copy-cancel {
+    padding: 0.875rem 1.25rem;
+    border-radius: 9999px;
+    border: 1px solid var(--faded-grey);
+    background: #fff;
+    color: var(--ditto-grey);
+    font-size: $text-sm;
+    font-weight: 500;
+    font-family: $font-satoshi;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:active { background: var(--lighter-grey); }
   }
 
   &__copy-confirm {
