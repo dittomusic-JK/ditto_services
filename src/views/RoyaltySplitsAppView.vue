@@ -5,12 +5,12 @@
     <div class="rsa__demo">
       <span class="rsa__demo-label">Demo:</span>
       <button
-        v-for="mode in (['populated', 'empty'] as const)"
+        v-for="mode in (['populated', 'empty', 'labelServices'] as const)"
         :key="mode"
         class="rsa__demo-tab"
         :class="{ 'rsa__demo-tab--active': demo === mode }"
         @click="setDemo(mode)"
-      >{{ mode === 'populated' ? 'Populated' : 'Empty' }}</button>
+      >{{ demoLabels[mode] }}</button>
     </div>
 
     <!-- Phone -->
@@ -30,6 +30,7 @@
         <AppReleaseScreen
           v-if="screen === 'release'"
           :release="release"
+          :is-label-services="demo === 'labelServices'"
           @open-track="openTrack"
         />
 
@@ -271,7 +272,7 @@ const populatedRelease: Release = ({
       trackId: 't5', trackNumber: 5, trackName: 'Midnight Drive', userShare: 65,
       splits: [
         { id: 's5', name: 'Geri Adams', email: 'geri101@gmail.com', share: 20, status: 'active', hasAccount: true, activeSince: '5th May 2025' },
-        { id: 's6', name: 'Bob Johnson', email: 'bob@example.com', share: 15, status: 'unclaimed', hasAccount: false }, // unclaimed = no Ditto account; same email as t6, so Edit Email can demo apply-to-all
+        { id: 's6', name: 'Bob Johnson', email: 'bob@example.com', share: 15, status: 'pending', hasAccount: false }, // same email as t6 — demos apply-to-all in Edit Email
       ],
     },
     {
@@ -311,13 +312,35 @@ const emptyRelease: Release = {
   tracks: populatedRelease.tracks.map(t => ({ ...t, splits: [] })),
 }
 
-const demo = ref<'populated' | 'empty'>('populated')
-const buildRelease = (mode: 'populated' | 'empty'): Release =>
-  JSON.parse(JSON.stringify(mode === 'empty' ? emptyRelease : populatedRelease))
+type DemoMode = 'populated' | 'empty' | 'labelServices'
+
+const demo = ref<DemoMode>('populated')
+const demoLabels: Record<DemoMode, string> = {
+  populated: 'Populated',
+  empty: 'Empty',
+  labelServices: 'Label Services',
+}
+
+// Label Services has no pending acceptance step — splits apply immediately, and a
+// collaborator without a Ditto account holds an *unclaimed* share until they sign
+// up. Web derives this the same way from the same mock, in RoyaltySplitsPage.vue.
+const buildRelease = (mode: DemoMode): Release => {
+  const release: Release = JSON.parse(JSON.stringify(mode === 'empty' ? emptyRelease : populatedRelease))
+  if (mode === 'labelServices') {
+    release.tracks.forEach(track => {
+      track.splits.forEach(split => {
+        if (split.status === 'pending') {
+          split.status = split.hasAccount ? 'active' : 'unclaimed'
+        }
+      })
+    })
+  }
+  return release
+}
 
 const release = reactive<Release>(buildRelease('populated'))
 
-const setDemo = (mode: 'populated' | 'empty') => {
+const setDemo = (mode: DemoMode) => {
   demo.value = mode
   Object.assign(release, buildRelease(mode))
   screen.value = 'release'

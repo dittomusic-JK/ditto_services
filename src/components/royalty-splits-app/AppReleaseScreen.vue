@@ -28,7 +28,8 @@
       <!-- Info note (aligned with the web version's ReleaseHeader) -->
       <p class="ars__note ars__note--spaced">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="ars__note-icon"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 7V11M8 5V5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        <span><b class="ars__note-b">Splits apply from confirmation date.</b> Collaborators receive an email to accept. Until confirmed, all royalties remain yours.</span>
+        <span v-if="isLabelServices">Splits are applied automatically. Unclaimed shares are held until collaborators create their Ditto account to withdraw.</span>
+        <span v-else><b class="ars__note-b">Splits apply from confirmation date.</b> Collaborators receive an email to accept. Until confirmed, all royalties remain yours.</span>
       </p>
     </div>
 
@@ -39,7 +40,8 @@
       <div class="ars__legend">
         <span class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--yours"></span>Yours</span>
         <span class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--collab"></span>Collaborators</span>
-        <span class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--pending"></span>Pending</span>
+        <span v-if="isLabelServices" class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--unclaimed"></span>Unclaimed</span>
+        <span v-else class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--pending"></span>Pending</span>
       </div>
     </div>
 
@@ -75,7 +77,7 @@
 import { computed } from 'vue'
 import type { Release, TrackSplit } from '../../types'
 
-const props = defineProps<{ release: Release }>()
+const props = defineProps<{ release: Release; isLabelServices?: boolean }>()
 
 defineEmits<{
   'open-track': [trackId: string]
@@ -241,6 +243,7 @@ const trackRowClass = (t: TrackSplit): string => {
     &--yours { background: var(--brand-secondary); }
     &--collab { background: var(--success); }
     &--pending { background: $color-amber-500; }
+    &--unclaimed { background: $color-orange-500; }
   }
 
   &__tracks-title {
