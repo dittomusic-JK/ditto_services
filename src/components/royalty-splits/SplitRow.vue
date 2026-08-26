@@ -101,7 +101,7 @@
     <!-- Status indicator -->
     <div class="sr__status">
       <template v-if="status && !isEditable && !isEditingShare">
-        <template v-if="hasPendingChange && !isRLS">
+        <template v-if="hasPendingChange">
           <div class="sr__pend-change">
             <span class="sr__pend-from">{{ originalShare }}%</span>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="sr__pend-arrow">
@@ -145,7 +145,7 @@
         <div class="sr__mini-tip" :class="{ 'sr__mini-tip--rls': isRLS }">Edit email</div>
       </div>
 
-      <div v-if="!isEditable && !isEditingShare && status === 'pending' && !isRLS" class="sr__act-wrap">
+      <div v-if="!isEditable && !isEditingShare && status === 'pending'" class="sr__act-wrap">
         <button @click="$emit('resend')" class="sr__icon-btn"><SendIcon /></button>
         <div class="sr__mini-tip">Resend confirmation email</div>
       </div>
@@ -422,7 +422,6 @@ const shareLabel = computed(() => {
 })
 
 const statusDotClass = computed(() => {
-  if (props.isRLS && props.status === 'pending') return 'sr__dot--active'
   switch (props.status) {
     case 'active': return 'sr__dot--active'
     case 'pending': return 'sr__dot--pending'
@@ -463,13 +462,9 @@ const statusText = computed(() => {
   }
 })
 
-// For RLS, don't show "Pending" - show "Active" instead (immediate splits)
-const displayStatusText = computed(() => {
-  if (props.isRLS && props.status === 'pending') {
-    return 'Active'
-  }
-  return statusText.value
-})
+// RLS accounts can hold genuinely pending splits (new device, upgraded account, or
+// pre-auto-approve), so pending is shown as pending on both account types.
+const displayStatusText = computed(() => statusText.value)
 
 // Mobile shows full date inline since there's more room
 const mobileStatusText = computed(() => {

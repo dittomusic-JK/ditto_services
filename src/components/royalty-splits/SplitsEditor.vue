@@ -14,7 +14,7 @@
         <span class="se__summary-label" :class="{ 'se__summary-label--rls': isRLS }">Your Split:</span>
         <div class="se__summary-row">
           <p class="se__summary-val" :class="{ 'se__summary-val--rls': isRLS }">{{ activeUserShare }}%</p>
-          <template v-if="!isRLS && (hasPendingChanges || hasStagedEdit) && activeUserShare !== currentUserShare">
+          <template v-if="(hasPendingChanges || hasStagedEdit) && activeUserShare !== currentUserShare">
             <span class="se__summary-sep">&gt;</span>
             <p class="se__summary-pending">{{ currentUserShare }}%</p>
             <span class="se__summary-pending-tag">{{ hasStagedEdit ? 'Unsaved' : 'Pending' }}</span>

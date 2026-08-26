@@ -12,7 +12,7 @@
           <span>Splits: <b class="ats__meta-purple">{{ splits.length }}</b></span>
           <span>
             Your Split: <b class="ats__meta-purple">{{ activeUserShare }}%</b>
-            <template v-if="!isLabelServices && stagedUserShare !== activeUserShare">
+            <template v-if="showPendingSummary">
               <span class="ats__meta-sep">&gt;</span>
               <b class="ats__meta-pending">{{ stagedUserShare }}%</b>
               <span class="ats__meta-tag">Pending</span>
@@ -125,6 +125,14 @@ const stagedUserShare = computed(
 )
 
 // A saved split whose share was revised and is awaiting re-confirmation
+// The "80% > 65%" summary means "once the outstanding splits confirm". In Label
+// Services an unclaimed share needs no confirmation, so it only earns the summary
+// when the track actually holds a pending split.
+const showPendingSummary = computed(() =>
+  stagedUserShare.value !== activeUserShare.value &&
+  (!props.isLabelServices || props.splits.some(s => s.status === 'pending'))
+)
+
 const hasPendingChange = (split: Collaborator): boolean =>
   split.originalShare !== undefined && split.originalShare !== split.share && split.status === 'pending'
 

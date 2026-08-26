@@ -336,16 +336,19 @@ const demoLabels: Record<DemoMode, string> = {
   labelServices: 'Label Services',
 }
 
-// Label Services has no pending acceptance step — splits apply immediately, and a
-// collaborator without a Ditto account holds an *unclaimed* share until they sign
-// up. Web derives this the same way from the same mock, in RoyaltySplitsPage.vue.
+// In Label Services, splits added from a recognised device are approved immediately,
+// so a collaborator without a Ditto account holds an *unclaimed* share until they
+// sign up. Genuinely pending splits are left alone — an RLS account can hold them
+// from a new device awaiting confirmation, from a subscription account that upgraded,
+// or from before auto-approve existed. Web derives this the same way from the same
+// mock, in RoyaltySplitsPage.vue.
 const buildRelease = (mode: DemoMode): Release => {
   const release: Release = JSON.parse(JSON.stringify(mode === 'empty' ? emptyRelease : populatedRelease))
   if (mode === 'labelServices') {
     release.tracks.forEach(track => {
       track.splits.forEach(split => {
-        if (split.status === 'pending') {
-          split.status = split.hasAccount ? 'active' : 'unclaimed'
+        if (split.status === 'pending' && split.hasAccount === false) {
+          split.status = 'unclaimed'
         }
       })
     })

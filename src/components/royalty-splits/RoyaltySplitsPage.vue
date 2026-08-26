@@ -556,14 +556,18 @@ const getRelease = (): Release => {
 }
 const release = reactive<Release>(getRelease())
 
-// In RLS (Label Services) mode there is no "pending" acceptance step — splits are
-// applied immediately. A collaborator without a Ditto account holds an *unclaimed*
-// share until they sign up to withdraw it; one with an account is simply active.
+// In RLS (Label Services) mode splits added from a recognised device are approved
+// immediately, so a collaborator without a Ditto account holds an *unclaimed* share
+// until they sign up to withdraw it.
+//
+// RLS accounts can still hold genuinely pending splits, so those are left alone:
+// added from a new device and not yet confirmed by the account holder, carried over
+// when a subscription account upgraded to RLS, or created before auto-approve existed.
 if (isRLS.value) {
   release.tracks.forEach(track => {
     track.splits.forEach(split => {
-      if (split.status === 'pending') {
-        split.status = split.hasAccount ? 'active' : 'unclaimed'
+      if (split.status === 'pending' && split.hasAccount === false) {
+        split.status = 'unclaimed'
       }
     })
   })

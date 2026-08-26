@@ -35,7 +35,7 @@
           <div class="tg__dist">
             <ShareBarEnhanced
               :confirmed-share="getConfirmedShare(track)"
-              :pending-count="isRLS ? 0 : getPendingCount(track)"
+              :pending-count="getPendingCount(track)"
               :unclaimed-count="getUnclaimedCount(track)"
               :is-r-l-s="isRLS"
             />
@@ -84,7 +84,7 @@
             <div class="tg__m-bar">
               <ShareBarEnhanced
                 :confirmed-share="getConfirmedShare(track)"
-                :pending-count="isRLS ? 0 : getPendingCount(track)"
+                :pending-count="getPendingCount(track)"
                 :unclaimed-count="getUnclaimedCount(track)"
                 :is-r-l-s="isRLS"
               />
