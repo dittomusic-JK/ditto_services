@@ -12,7 +12,7 @@
           <span>Splits: <b class="ats__meta-purple">{{ splits.length }}</b></span>
           <span>
             Your Split: <b class="ats__meta-purple">{{ activeUserShare }}%</b>
-            <template v-if="stagedUserShare !== activeUserShare">
+            <template v-if="!isLabelServices && stagedUserShare !== activeUserShare">
               <span class="ats__meta-sep">&gt;</span>
               <b class="ats__meta-pending">{{ stagedUserShare }}%</b>
               <span class="ats__meta-tag">Pending</span>
@@ -64,7 +64,7 @@
       </p>
       <p v-else-if="split.status === 'unclaimed'" class="ats__status ats__status--unclaimed">
         <span class="ats__dot ats__dot--unclaimed"></span>
-        Needs a Ditto account to claim
+        {{ isLabelServices ? 'Unclaimed' : 'Needs a Ditto account to claim' }}
       </p>
       <p v-else-if="split.status === 'rejected'" class="ats__status ats__status--rejected">
         <span class="ats__dot ats__dot--rejected"></span>
@@ -99,8 +99,10 @@ const props = withDefaults(defineProps<{
   trackNumber?: number
   splits: Collaborator[]
   hasCopySources?: boolean
+  isLabelServices?: boolean
 }>(), {
   hasCopySources: false,
+  isLabelServices: false,
 })
 
 defineEmits<{

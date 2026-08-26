@@ -42,7 +42,31 @@
         </div>
       </div>
 
-      <div class="acs__field">
+      <!-- Edit email: web's explanatory note, then current and new as separate fields -->
+      <template v-if="requireEmailChange">
+        <p class="acs__note">
+          Changing this email will move all sales and royalties for this split to the new
+          email's account. Invitations previously sent to the old email address will no
+          longer work.
+        </p>
+
+        <div class="acs__field">
+          <label class="acs__label">Current email</label>
+          <div class="acs__control">
+            <span class="acs__value">{{ email }}</span>
+          </div>
+        </div>
+
+        <div class="acs__field">
+          <label class="acs__label">New email</label>
+          <div class="acs__control">
+            <input v-model="localEmail" type="email" placeholder="name@example.com" class="acs__input" />
+          </div>
+          <p v-if="emailError" class="acs__error">{{ emailError }}</p>
+        </div>
+      </template>
+
+      <div v-else class="acs__field">
         <label class="acs__label">Email</label>
         <div class="acs__control">
           <input v-if="!emailLocked" v-model="localEmail" type="email" placeholder="We'll contact them here" class="acs__input" />
@@ -115,7 +139,7 @@ const emit = defineEmits<{
 }>()
 
 const localName = ref(props.name)
-const localEmail = ref(props.email)
+const localEmail = ref(props.requireEmailChange ? '' : props.email)
 const localShare = ref(props.share)
 const applyToAll = ref(false)
 const showSuggestions = ref(false)
@@ -200,6 +224,16 @@ const confirm = () => {
   &__field {
     padding: 0.75rem 1.25rem;
     border-bottom: 1px solid var(--faded-grey);
+  }
+
+  &__note {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--faded-grey);
+    background: var(--lighter-grey);
+    font-size: $text-xs;
+    line-height: 1.55;
+    color: var(--ditto-grey);
+    font-family: $font-satoshi;
   }
 
   &__label {

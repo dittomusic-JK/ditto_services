@@ -30,7 +30,7 @@
         <AppReleaseScreen
           v-if="screen === 'release'"
           :release="release"
-          :is-label-services="demo === 'labelServices'"
+          :is-label-services="isLabelServices"
           @open-track="openTrack"
         />
 
@@ -40,6 +40,7 @@
           :track-number="currentTrack?.trackNumber"
           :splits="slateSplits"
           :has-copy-sources="copySources.length > 0"
+          :is-label-services="isLabelServices"
           @back="closeSlate"
           @add="screen = 'add'"
           @menu="openMenu"
@@ -54,18 +55,20 @@
             <button class="rsa__copy-back" @click="screen = 'track'" aria-label="Back">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
             </button>
-            <h2 class="rsa__copy-title">Copy Splits From</h2>
+            <h2 class="rsa__copy-title">Copy Splits</h2>
           </div>
-          <p class="rsa__copy-label">Select a track to copy splits from:</p>
+          <p class="rsa__copy-label">Select a track to copy splits from to &ldquo;{{ currentTrack?.trackName }}&rdquo;:</p>
 
           <button
             v-for="source in copySources"
             :key="source.trackId"
             class="rsa__copy-row"
             :class="{ 'rsa__copy-row--sel': copyFromSelection === source.trackId }"
-            @click="copyFromSelection = source.trackId"
+            @click="toggleCopyFrom(source.trackId)"
           >
-            <span class="rsa__copy-radio" :class="{ 'rsa__copy-radio--on': copyFromSelection === source.trackId }" />
+            <span class="rsa__copy-check" :class="{ 'rsa__copy-check--on': copyFromSelection === source.trackId }">
+              <svg v-if="copyFromSelection === source.trackId" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+            </span>
             <span class="rsa__copy-num">{{ source.trackNumber }}</span>
             <span class="rsa__copy-body">
               <span class="rsa__copy-name">{{ source.trackName }}</span>
@@ -79,7 +82,7 @@
               <p class="rsa__copy-preview-label">Copying from <strong>{{ copyFromSource.trackName }}</strong></p>
               <div class="rsa__copy-tags">
                 <span class="rsa__copy-tag rsa__copy-tag--you">You {{ copyFromSource.userShare }}%</span>
-                <span v-for="sp in copyFromSource.splits" :key="sp.id" class="rsa__copy-tag">{{ sp.name }} {{ sp.share }}%</span>
+                <span v-for="sp in copyFromSource.splits" :key="sp.id" class="rsa__copy-tag" :class="chipClass(sp)">{{ sp.name }} {{ sp.share }}%</span>
               </div>
             </div>
 
@@ -101,14 +104,14 @@
             <button class="rsa__copy-back" @click="screen = 'track'" aria-label="Back">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
             </button>
-            <h2 class="rsa__copy-title">Copy Splits To</h2>
+            <h2 class="rsa__copy-title">Copy Splits</h2>
           </div>
           <!-- What's being copied -->
           <div v-if="currentTrack" class="rsa__copy-preview">
             <p class="rsa__copy-preview-label">Copying from <strong>{{ currentTrack.trackName }}</strong></p>
             <div class="rsa__copy-tags">
               <span class="rsa__copy-tag rsa__copy-tag--you">You {{ currentTrack.userShare }}%</span>
-              <span v-for="sp in currentTrack.splits" :key="sp.id" class="rsa__copy-tag">{{ sp.name }} {{ sp.share }}%</span>
+              <span v-for="sp in currentTrack.splits" :key="sp.id" class="rsa__copy-tag" :class="chipClass(sp)">{{ sp.name }} {{ sp.share }}%</span>
             </div>
           </div>
 
@@ -215,6 +218,16 @@
           @close="firstSplitPromptOpen = false"
           @copy-to-all="handleCopyToAllFromFirstSplit"
         />
+
+        <!-- Removing a collaborator is destructive, so confirm first -->
+        <AppConfirmModal
+          v-if="removeTarget"
+          title="Remove collaborator?"
+          :body="removeBody"
+          confirm-label="Remove"
+          @confirm="confirmRemove"
+          @cancel="removeTarget = null"
+        />
       </div>
 
       <!-- Tab bar — real icons and order from the app's DashboardLayout.vue -->
@@ -239,6 +252,7 @@ import AppTrackSlate from '../components/royalty-splits-app/AppTrackSlate.vue'
 import AppCollaboratorSlate from '../components/royalty-splits-app/AppCollaboratorSlate.vue'
 import AppActionSheet from '../components/royalty-splits-app/AppActionSheet.vue'
 import AppFirstSplitModal from '../components/royalty-splits-app/AppFirstSplitModal.vue'
+import AppConfirmModal from '../components/royalty-splits-app/AppConfirmModal.vue'
 import type { SheetItem } from '../components/royalty-splits-app/AppActionSheet.vue'
 
 // ---- Demo data: identical to the web version's populated release ----
@@ -315,6 +329,7 @@ const emptyRelease: Release = {
 type DemoMode = 'populated' | 'empty' | 'labelServices'
 
 const demo = ref<DemoMode>('populated')
+const isLabelServices = computed(() => demo.value === 'labelServices')
 const demoLabels: Record<DemoMode, string> = {
   populated: 'Populated',
   empty: 'Empty',
@@ -433,7 +448,8 @@ const copyToSelection = ref<string[]>([])
 const copyTargets = computed(() => release.tracks.filter(t => t.trackId !== currentTrackId.value))
 
 const openCopyTo = () => {
-  copyToSelection.value = []
+  // Web pre-selects every track; copying to the whole release is the common case
+  copyToSelection.value = copyTargets.value.map(t => t.trackId)
   screen.value = 'copyTo'
   scrollTop()
 }
@@ -442,6 +458,10 @@ const toggleCopyTarget = (trackId: string) => {
   const i = copyToSelection.value.indexOf(trackId)
   i > -1 ? copyToSelection.value.splice(i, 1) : copyToSelection.value.push(trackId)
 }
+
+// Chips carry the collaborator's status colour, so a pending share doesn't read
+// as confirmed just because it's being copied.
+const chipClass = (sp: Collaborator) => `rsa__copy-tag--${sp.status ?? 'pending'}`
 
 // Selected targets that would lose splits — drives the warning at the foot of the screen
 const copyToConflictCount = computed(
@@ -479,6 +499,11 @@ const copyFromSelection = ref<string | null>(null)
 const copyFromSource = computed(() =>
   release.tracks.find(t => t.trackId === copyFromSelection.value) ?? null
 )
+
+// Single select, but a checkbox so the choice can be cleared — a radio can't be
+const toggleCopyFrom = (trackId: string) => {
+  copyFromSelection.value = copyFromSelection.value === trackId ? null : trackId
+}
 
 const openCopyFrom = () => {
   copyFromSelection.value = null
@@ -556,11 +581,30 @@ const handleMenuSelect = (id: string) => {
       ? `Invitation resent to ${target.email}.`
       : `Confirmation email resent to ${target.email}.`)
   } else if (id === 'remove') {
-    const list = currentTrack.value?.splits
-    const idx = list?.findIndex(s => s.id === target.id) ?? -1
-    if (idx > -1) list?.splice(idx, 1)
-    showToast('Collaborator removed from this split.')
+    removeTarget.value = target
   }
+}
+
+// ---- Remove collaborator (confluence: [Mob] Remove collaborator) ----
+const removeTarget = ref<Collaborator | null>(null)
+
+// Subscription users get an email when a share is removed; Ditto + RLS don't.
+const removeBody = computed(() =>
+  removeTarget.value
+    ? isLabelServices.value
+      ? `Are you sure you want to remove ${removeTarget.value.name}?`
+      : `Are you sure you want to remove ${removeTarget.value.name}? We will send an email to let them know.`
+    : ''
+)
+
+const confirmRemove = () => {
+  const target = removeTarget.value
+  removeTarget.value = null
+  if (!target) return
+  const list = currentTrack.value?.splits
+  const idx = list?.findIndex(s => s.id === target.id) ?? -1
+  if (idx > -1) list?.splice(idx, 1)
+  showToast('Collaborator removed successfully')
 }
 
 // ---- Edit split / edit email ----
@@ -917,10 +961,11 @@ const tabs = [
     color: var(--split-confirmed);
     white-space: nowrap;
 
-    &--you {
-      background: rgba($color-brand-secondary, 0.1);
-      color: var(--split-yours);
-    }
+    &--you      { background: rgba($color-brand-secondary, 0.1); color: var(--split-yours); }
+    &--active   { background: rgba($color-success, 0.1);         color: var(--split-confirmed); }
+    &--pending  { background: rgba($color-amber-500, 0.12);      color: $color-amber-600; }
+    &--unclaimed{ background: rgba($color-orange-500, 0.12);     color: $color-orange-600; }
+    &--rejected { background: rgba($color-error, 0.1);           color: var(--split-rejected); }
   }
 
   /* ---- Replacement warning ---- */
@@ -996,21 +1041,6 @@ const tabs = [
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  &__copy-radio {
-    width: 1.125rem;
-    height: 1.125rem;
-    border-radius: 50%;
-    border: 2px solid var(--faded-grey);
-    background: #fff;
-    flex-shrink: 0;
-    transition: border-color 0.15s, box-shadow 0.15s;
-
-    &--on {
-      border-color: $color-brand-primary;
-      box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 1rem $color-brand-primary;
-    }
   }
 
   &__copy-check {
