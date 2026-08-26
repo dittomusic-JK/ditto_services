@@ -66,6 +66,10 @@
         <span class="ats__dot ats__dot--unclaimed"></span>
         {{ isLabelServices ? 'Unclaimed' : 'Needs a Ditto account to claim' }}
       </p>
+      <p v-else-if="split.status === 'verification'" class="ats__status ats__status--verification">
+        <span class="ats__dot ats__dot--verification"></span>
+        Verification required
+      </p>
       <p v-else-if="split.status === 'rejected'" class="ats__status ats__status--rejected">
         <span class="ats__dot ats__dot--rejected"></span>
         Rejected. Edit to send a new offer.
@@ -125,12 +129,13 @@ const stagedUserShare = computed(
 )
 
 // A saved split whose share was revised and is awaiting re-confirmation
-// The "80% > 65%" summary means "once the outstanding splits confirm". In Label
-// Services an unclaimed share needs no confirmation, so it only earns the summary
-// when the track actually holds a pending split.
+// The "80% > 65% Pending" summary is specifically about splits awaiting the
+// collaborator, so it needs an actual pending split — an unclaimed share needs no
+// confirmation, and one awaiting verification is waiting on the account holder, not
+// the collaborator. Web gates it the same way, on hasPendingChanges.
 const showPendingSummary = computed(() =>
   stagedUserShare.value !== activeUserShare.value &&
-  (!props.isLabelServices || props.splits.some(s => s.status === 'pending'))
+  props.splits.some(s => s.status === 'pending')
 )
 
 const hasPendingChange = (split: Collaborator): boolean =>
@@ -299,6 +304,7 @@ const hasPendingChange = (split: Collaborator): boolean =>
     &--active { color: var(--blue); }
     &--pending { color: $color-amber-600; }
     &--unclaimed { color: $color-orange-600; }
+    &--verification { color: var(--split-verification); }
     &--rejected { color: var(--error); }
   }
 
@@ -310,6 +316,7 @@ const hasPendingChange = (split: Collaborator): boolean =>
     &--active { background: #00d346; }
     &--pending { background: $color-amber-500; }
     &--unclaimed { background: $color-orange-500; }
+    &--verification { background: var(--split-verification); }
     &--rejected { background: var(--error); }
   }
 

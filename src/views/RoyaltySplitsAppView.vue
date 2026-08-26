@@ -306,9 +306,10 @@ const populatedRelease: Release = ({
       ],
     },
     {
-      trackId: 't9', trackNumber: 9, trackName: 'Your Song', userShare: 40,
+      trackId: 't9', trackNumber: 9, trackName: 'Your Song', userShare: 25,
       splits: [
         { id: 's12', name: 'Primary Songwriter', email: 'songwriter@ascap.com', share: 60, status: 'active', activeSince: '20th April 2025' },
+        { id: 's14', name: 'Studio Engineer', email: 'engineer@studio.com', share: 15, status: 'verification', hasAccount: true }, // unrecognised device — awaits the account holder
       ],
     },
     {
@@ -560,6 +561,11 @@ const openMenu = (split: Collaborator) => {
 }
 
 const menuItems = computed<SheetItem[]>(() => {
+  // Until the account holder verifies it, the split can only be abandoned — an
+  // unrecognised device shouldn't be able to alter a share.
+  if (menuTarget.value?.status === 'verification') {
+    return [{ id: 'remove', label: 'Remove Collaborator', icon: 'trash' }]
+  }
   const items: SheetItem[] = [{ id: 'edit', label: 'Edit Split', icon: 'edit' }]
   if (menuTarget.value?.status === 'unclaimed') {
     items.push({ id: 'editEmail', label: 'Edit Email', icon: 'mail' })
@@ -969,6 +975,7 @@ const tabs = [
     &--pending  { background: rgba($color-amber-500, 0.12);      color: $color-amber-600; }
     &--unclaimed{ background: rgba($color-orange-500, 0.12);     color: $color-orange-600; }
     &--rejected { background: rgba($color-error, 0.1);           color: var(--split-rejected); }
+    &--verification { background: rgba($color-grey-smoke, 0.12); color: var(--split-verification); }
   }
 
   /* ---- Replacement warning ---- */

@@ -427,6 +427,7 @@ const statusDotClass = computed(() => {
     case 'pending': return 'sr__dot--pending'
     case 'rejected': return 'sr__dot--rejected'
     case 'unclaimed': return props.isRLS ? 'sr__dot--unclaimed-rls' : 'sr__dot--unclaimed'
+    case 'verification': return 'sr__dot--verification'
     default: return 'sr__dot--default'
   }
 })
@@ -457,6 +458,8 @@ const statusText = computed(() => {
       return 'Rejected'
     case 'unclaimed':
       return 'Unclaimed'
+    case 'verification':
+      return 'Verification required'
     default:
       return ''
   }
@@ -484,6 +487,8 @@ const statusTooltip = computed(() => {
       return 'The collaborator declined this split offer. Edit to send a new offer.'
     case 'unclaimed':
       return 'This collaborator needs to log in or create a Ditto account to claim their split.'
+    case 'verification':
+      return 'Added from an unrecognised device. Verify it from the email we sent you to activate this split.'
     default:
       return ''
   }
@@ -614,6 +619,7 @@ const emitUpdate = () => {
   &--rejected { background: var(--split-rejected); }
   &--unclaimed { background: var(--split-unclaimed); }
   &--unclaimed-rls { background: var(--split-unclaimed); }
+  &--verification { background: var(--split-verification); }
   &--default { background: var(--ditto-grey); }
 }
 

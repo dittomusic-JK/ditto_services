@@ -70,6 +70,9 @@
   --split-pending: #f59e0b;
   --split-unclaimed: #f97316;
   --split-rejected: #ee404c;
+  /* Awaiting the account holder, not the collaborator — deliberately outside the
+     amber/orange "waiting on someone else" family, and not a new accent hue. */
+  --split-verification: #626984;
 
   /* Status */
   --error: #ee404c;

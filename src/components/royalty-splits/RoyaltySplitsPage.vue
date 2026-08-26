@@ -474,9 +474,17 @@ const populatedRelease: Release = {
           share: 60,
           status: 'active',
           activeSince: '20th April 2025'
+        },
+        {
+          id: 's14',
+          name: 'Studio Engineer',
+          email: 'engineer@studio.com',
+          share: 15,
+          status: 'verification', // added from an unrecognised device — awaits the account holder
+          hasAccount: true
         }
       ],
-      userShare: 40
+      userShare: 25
     },
     // Track 10: Rejected split (collaborator declined - their share goes back to user)
     {

@@ -9,7 +9,10 @@ export interface LabelOption {
 
 // Royalty Splits Types
 export type UserType = 'subscription' | 'rls'
-export type SplitStatus = 'active' | 'pending' | 'rejected' | 'unclaimed'
+// 'verification' is a gate rather than a resting state: a split added from an
+// unrecognised device waits here until the account holder verifies it, and only then
+// becomes active (Ditto+ RLS) or pending (subscription).
+export type SplitStatus = 'active' | 'pending' | 'rejected' | 'unclaimed' | 'verification'
 
 export interface Collaborator {
   id: string
