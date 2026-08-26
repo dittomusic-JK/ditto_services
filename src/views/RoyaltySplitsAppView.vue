@@ -562,7 +562,7 @@ const menuItems = computed<SheetItem[]>(() => {
     items.push({ id: 'editEmail', label: 'Edit Email', icon: 'mail' })
     items.push({ id: 'resend', label: 'Resend Invitation', icon: 'send' })
   } else if (menuTarget.value?.status === 'pending') {
-    items.push({ id: 'resend', label: 'Resend Confirmation Email', icon: 'send' })
+    items.push({ id: 'resend', label: 'Resend Confirmation', icon: 'send' })
   }
   items.push({ id: 'remove', label: 'Remove Collaborator', icon: 'trash' })
   return items
@@ -578,7 +578,7 @@ const handleMenuSelect = (id: string) => {
     screen.value = 'editEmail'
   } else if (id === 'resend') {
     showToast(target.status === 'unclaimed'
-      ? `Invitation resent to ${target.email}.`
+      ? `Invitation email resent to ${target.email}.`
       : `Confirmation email resent to ${target.email}.`)
   } else if (id === 'remove') {
     removeTarget.value = target
