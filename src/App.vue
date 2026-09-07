@@ -20,6 +20,10 @@
             to="/royalty-splits-app" 
             class="app__link" :class="{ 'app__link--active': $route.path === '/royalty-splits-app' }"
           >Splits (App)</router-link>
+          <router-link 
+            to="/release-builder-app" 
+            class="app__link" :class="{ 'app__link--active': $route.path === '/release-builder-app' }"
+          >Release Builder (App)</router-link>
         </div>
       </div>
     </nav>
