@@ -47,6 +47,8 @@
           @copy-from="openCopyFrom"
           @copy-to="openCopyTo"
           @unregistered-info="showUnregisteredInfo"
+          @edit-email="openEditEmailFor"
+          @verification-info="showVerificationInfo"
         />
 
         <!-- Copy splits from another track -->
@@ -151,6 +153,58 @@
           </div>
         </div>
 
+        <!-- Apply splits to same-ISRC tracks on other releases (BA-136) -->
+        <div v-else-if="screen === 'applySplits'" class="rsa__copy">
+          <div class="rsa__copy-titlebar">
+            <button class="rsa__copy-back" @click="screen = 'track'" aria-label="Back">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
+            </button>
+            <h2 class="rsa__copy-title">Apply Splits</h2>
+          </div>
+          <p class="rsa__copy-label rsa__copy-label--intro">You have used this track (ISRC) in other releases. Do you want to apply the same splits on them?</p>
+          <div v-if="currentTrack" class="rsa__copy-preview">
+            <p class="rsa__copy-preview-label">Copying from <strong>{{ currentTrack.trackName }}</strong></p>
+            <div class="rsa__copy-tags">
+              <span class="rsa__copy-tag rsa__copy-tag--you">You {{ currentTrack.userShare }}%</span>
+              <span v-for="sp in currentTrack.splits" :key="sp.id" class="rsa__copy-tag" :class="chipClass(sp)">{{ sp.name }} {{ sp.share }}%</span>
+            </div>
+          </div>
+
+          <div class="rsa__copy-sel-head">
+            <p class="rsa__copy-label">Releases with this track:</p>
+            <button class="rsa__copy-all" @click="toggleAllApplyTargets">
+              {{ applySelection.length === applyMatches.length ? 'Deselect all' : 'Select all' }}
+            </button>
+          </div>
+
+          <button v-for="(match, i) in applyMatches" :key="match.trackId" class="rsa__copy-row" @click="toggleApplyTarget(match.trackId)">
+            <span class="rsa__copy-check" :class="{ 'rsa__copy-check--on': applySelection.includes(match.trackId) }">
+              <svg v-if="applySelection.includes(match.trackId)" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+            </span>
+            <span class="rsa__copy-num">{{ i + 1 }}</span>
+            <span class="rsa__copy-body">
+              <span class="rsa__copy-name">{{ match.releaseTitle }}</span>
+              <span class="rsa__copy-meta">{{ match.existingSplits > 0 ? `${match.existingSplits} split${match.existingSplits === 1 ? '' : 's'} — will be replaced` : 'No splits yet' }}</span>
+            </span>
+          </button>
+
+          <div class="rsa__copy-foot">
+            <div v-if="applyConflictCount > 0" class="rsa__copy-warn">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="10" r="8"/><path d="M10 6v4M10 14h.01"/></svg>
+              <p>
+                <strong>{{ applyConflictCount }} track{{ applyConflictCount === 1 ? ' has' : 's have' }} existing splits.</strong>
+                Confirming will replace them with the new splits.
+              </p>
+            </div>
+            <div class="rsa__copy-actions">
+              <button class="rsa__copy-cancel" @click="screen = 'track'">Cancel</button>
+              <button class="rsa__copy-confirm" :disabled="applySelection.length === 0" @click="confirmApplySplits">
+                Apply to {{ applySelection.length }} track{{ applySelection.length === 1 ? '' : 's' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
         <AppCollaboratorSlate
           v-else-if="screen === 'add'"
           title="Add Collaborator"
@@ -245,8 +299,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import type { Release, Collaborator } from '../types'
+import { watch, ref, reactive, computed } from 'vue'
+import type { IsrcMatch, Release, Collaborator } from '../types'
 import AppReleaseScreen from '../components/royalty-splits-app/AppReleaseScreen.vue'
 import AppTrackSlate from '../components/royalty-splits-app/AppTrackSlate.vue'
 import AppCollaboratorSlate from '../components/royalty-splits-app/AppCollaboratorSlate.vue'
@@ -259,6 +313,16 @@ import type { SheetItem } from '../components/royalty-splits-app/AppActionSheet.
 const populatedRelease: Release = ({
   id: '1',
   title: 'Midnight Sessions EP',
+  // Same-ISRC tracks on other releases (BA-136)
+  isrcMatches: {
+    t1: [
+      { releaseId: 'r-dlx', releaseTitle: 'Midnight Sessions EP (Deluxe)', trackId: 't1-dlx', trackName: 'Intro (Midnight)', existingSplits: 2 },
+      { releaseId: 'r-comp', releaseTitle: 'Afrobeats Now 2026', trackId: 't1-comp', trackName: 'Intro (Midnight)', existingSplits: 0 },
+    ],
+    t2: [
+      { releaseId: 'r-dlx', releaseTitle: 'Midnight Sessions EP (Deluxe)', trackId: 't2-dlx', trackName: 'City Lights (feat. Rema)', existingSplits: 0 },
+    ],
+  },
   artwork: 'https://picsum.photos/seed/album2/400/400',
   accountHolder: 'Oluwafisayo Isa (me)',
   tracks: [
@@ -370,7 +434,7 @@ const setDemo = (mode: DemoMode) => {
 }
 
 // ---- Screen state ----
-type Screen = 'release' | 'track' | 'add' | 'edit' | 'editEmail' | 'copyFrom' | 'copyTo'
+type Screen = 'release' | 'track' | 'add' | 'edit' | 'editEmail' | 'copyFrom' | 'copyTo' | 'applySplits'
 const screen = ref<Screen>('release')
 const currentTrackId = ref<string | null>(null)
 const screenRef = ref<HTMLElement | null>(null)
@@ -437,14 +501,62 @@ const addCollaborator = (payload: { name: string; email: string; share: number; 
   // Saved on the spot — there is no separate save step
   const wasFirstOnRelease = release.tracks.every(t => t.splits.length === 0)
   currentTrack.value?.splits.push(split)
+  // Web parity: your share is whatever is left after collaborators (rejected shares don't count)
+  if (currentTrack.value) currentTrack.value.userShare = Math.max(0, 100 - currentTrack.value.splits.filter(sp => sp.status !== 'rejected').reduce((sum, sp) => sum + sp.share, 0))
   screen.value = 'track'
   scrollTop()
 
   if (wasFirstOnRelease && release.tracks.length > 1) {
     firstSplitPromptOpen.value = true
+    pendingApply.value = true
   } else {
     showToast("Split saved! We've sent an email to your collaborators. When they accept the offer, the split will be confirmed.")
+    offerApplyToIsrcMatches()
   }
+}
+
+// Edit email straight from the collaborator card (no need to open the menu)
+const openEditEmailFor = (split: Collaborator) => {
+  menuTarget.value = split
+  screen.value = 'editEmail'
+  scrollTop()
+}
+
+const showVerificationInfo = () => {
+  showToast('This split was added from an unrecognised device. It goes live once you verify it from the email we sent.', 'info')
+}
+
+// ---- Apply splits to same-ISRC tracks on other releases (BA-136) ----
+const applyMatches = ref<IsrcMatch[]>([])
+const applySelection = ref<string[]>([])
+const applyConflictCount = computed(() => applyMatches.value.filter(m => applySelection.value.includes(m.trackId) && m.existingSplits > 0).length)
+
+const applySplitsToMatches = (matches: IsrcMatch[]) => {
+  matches.forEach(m => { m.existingSplits = currentTrack.value?.splits.length ?? 0 })
+  showToast(`Splits applied to ${matches.length} track${matches.length === 1 ? '' : 's'}.`)
+}
+
+/** Subscription users confirm; Ditto + RLS (label services) applies silently. */
+const offerApplyToIsrcMatches = () => {
+  const matches = currentTrack.value ? (release.isrcMatches?.[currentTrack.value.trackId] ?? []) : []
+  if (matches.length === 0) return
+  if (isLabelServices.value) { applySplitsToMatches(matches); return }
+  applyMatches.value = matches
+  applySelection.value = matches.map(m => m.trackId)
+  screen.value = 'applySplits'
+  scrollTop()
+}
+const pendingApply = ref(false)
+const toggleApplyTarget = (trackId: string) => {
+  const i = applySelection.value.indexOf(trackId)
+  i > -1 ? applySelection.value.splice(i, 1) : applySelection.value.push(trackId)
+}
+const toggleAllApplyTargets = () => {
+  applySelection.value = applySelection.value.length === applyMatches.value.length ? [] : applyMatches.value.map(m => m.trackId)
+}
+const confirmApplySplits = () => {
+  applySplitsToMatches(applyMatches.value.filter(m => applySelection.value.includes(m.trackId)))
+  screen.value = 'track'
 }
 
 // ---- Copy splits TO other tracks (web TrackGroup copy-to parity) ----
@@ -533,6 +645,10 @@ const confirmCopyFrom = () => {
 
 // ---- First split on the release ----
 const firstSplitPromptOpen = ref(false)
+// Same-ISRC offer waits until the first-split prompt has been dismissed
+watch(firstSplitPromptOpen, (open) => {
+  if (!open && pendingApply.value) { pendingApply.value = false; offerApplyToIsrcMatches() }
+})
 
 const handleCopyToAllFromFirstSplit = () => {
   firstSplitPromptOpen.value = false
@@ -564,7 +680,10 @@ const menuItems = computed<SheetItem[]>(() => {
   // Until the account holder verifies it, the split can only be abandoned — an
   // unrecognised device shouldn't be able to alter a share.
   if (menuTarget.value?.status === 'verification') {
-    return [{ id: 'remove', label: 'Remove Collaborator', icon: 'trash' }]
+    return [
+      { id: 'resendVerification', label: 'Resend verification email', icon: 'send' },
+      { id: 'remove', label: 'Remove Collaborator', icon: 'trash' },
+    ]
   }
   const items: SheetItem[] = [{ id: 'edit', label: 'Edit Split', icon: 'edit' }]
   if (menuTarget.value?.status === 'unclaimed') {
@@ -585,6 +704,8 @@ const handleMenuSelect = (id: string) => {
     screen.value = 'edit'
   } else if (id === 'editEmail') {
     screen.value = 'editEmail'
+  } else if (id === 'resendVerification') {
+    showToast(`Verification email resent to ${target.email}.`, 'info')
   } else if (id === 'resend') {
     showToast(target.status === 'unclaimed'
       ? `Invitation email resent to ${target.email}.`
@@ -630,6 +751,7 @@ const applyEditSplit = (payload: { name: string; email: string; share: number; a
     showToast("Split updated! We've sent an email to your collaborators. When they accept the revised offer, the split will be confirmed.")
   }
   screen.value = 'track'
+  offerApplyToIsrcMatches()
 }
 
 const applyEditEmail = (payload: { name: string; email: string; share: number; applyToAll: boolean }) => {

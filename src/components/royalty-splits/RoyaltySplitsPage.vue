@@ -9,7 +9,13 @@
           </svg>
           Back
         </button>
-        <h1 class="rsp__title">Royalty Splits</h1>
+        <div class="rsp__heading">
+          <h1 class="rsp__title">Royalty Splits</h1>
+          <a :href="SPLITS_HELP_URL" target="_blank" rel="noopener" class="rsp__help">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Need help with splits?
+          </a>
+        </div>
       </div>
       
       <!-- Legend -->
@@ -34,6 +40,10 @@
             <span class="rsp__legend-label">Unclaimed</span>
           </div>
         </template>
+      <div class="rsp__legend-item">
+          <div class="rsp__dot rsp__dot--verification" />
+          <span class="rsp__legend-label">Requires verification</span>
+        </div>
       </div>
     </div>
 
@@ -92,6 +102,15 @@
       @edit-email="openEditEmailModal"
     />
 
+    <ApplySplitsModal
+      v-if="applyModal.show"
+      :source-track-name="applyModal.sourceTrackName"
+      :source-user-share="applyModal.sourceUserShare"
+      :source-splits="applyModal.sourceSplits"
+      :matches="applyModal.matches"
+      @close="applyModal.show = false"
+      @confirm="handleApplyConfirm"
+    />
     <CopySplitsModal
       v-if="copyModal.show"
       :mode="copyModal.mode"
@@ -141,15 +160,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import type { UserType, Release, TrackSplit, Collaborator } from '../../types'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import type { UserType, Release, TrackSplit, Collaborator, IsrcMatch } from '../../types'
 import ReleaseHeader from './ReleaseHeader.vue'
 import TrackGroup from './TrackGroup.vue'
 import CopySplitsModal from './CopySplitsModal.vue'
+import ApplySplitsModal from './ApplySplitsModal.vue'
 import FirstSplitModal from './FirstSplitModal.vue'
 import EditEmailModal from './EditEmailModal.vue'
 import UnsavedChangesModal from './UnsavedChangesModal.vue'
 import Toast from '../ui/Toast.vue'
+
+// Permanent FAQ entry point — the onboarding popup only shows once, this is always here
+const SPLITS_HELP_URL = 'https://support.dittomusic.com/en/collections/royalty-splits'
 
 const props = withDefaults(defineProps<{
   userType?: UserType
@@ -300,6 +323,16 @@ const populatedRelease: Release = {
   title: 'Midnight Sessions EP',
   artwork: 'https://picsum.photos/seed/album2/400/400',
   accountHolder: 'Oluwafisayo Isa (me)',
+  // Same-ISRC tracks on other releases (BA-136)
+  isrcMatches: {
+    t1: [
+      { releaseId: 'r-dlx', releaseTitle: 'Midnight Sessions EP (Deluxe)', trackId: 't1-dlx', trackName: 'Intro (Midnight)', existingSplits: 2 },
+      { releaseId: 'r-comp', releaseTitle: 'Afrobeats Now 2026', trackId: 't1-comp', trackName: 'Intro (Midnight)', existingSplits: 0 },
+    ],
+    t2: [
+      { releaseId: 'r-dlx', releaseTitle: 'Midnight Sessions EP (Deluxe)', trackId: 't2-dlx', trackName: 'City Lights (feat. Rema)', existingSplits: 0 },
+    ],
+  },
   tracks: [
     // Track 1: No splits - 100% user
     {
@@ -642,6 +675,52 @@ const hasChangesForTrack = (trackId: string): boolean => {
 }
 
 // Batch save handler - applies all changes at once
+// ---- Apply splits to same-ISRC tracks on other releases (BA-136) ----
+const applyModal = reactive<{
+  show: boolean
+  sourceTrackName: string
+  sourceUserShare: number
+  sourceSplits: Collaborator[]
+  matches: IsrcMatch[]
+}>({ show: false, sourceTrackName: '', sourceUserShare: 100, sourceSplits: [], matches: [] })
+
+const applySplitsToMatches = (track: TrackSplit, matches: IsrcMatch[]) => {
+  // Prototype: the other releases live outside this page, so we just record that they now mirror this track
+  matches.forEach(m => { m.existingSplits = track.splits.length })
+  showToast(`Splits applied to ${matches.length} track${matches.length !== 1 ? 's' : ''}`)
+}
+
+/** After a save with added/updated splits: RLS applies silently, subscription users confirm. */
+const offerApplyToIsrcMatches = (track: TrackSplit, changes: { added: Collaborator[], edited: Collaborator[] }) => {
+  const matches = release.isrcMatches?.[track.trackId] ?? []
+  if (matches.length === 0 || (changes.added.length === 0 && changes.edited.length === 0)) return
+  if (isRLS.value) {
+    applySplitsToMatches(track, matches)
+    return
+  }
+  applyModal.sourceTrackName = track.trackName
+  applyModal.sourceUserShare = track.userShare
+  applyModal.sourceSplits = track.splits
+  applyModal.matches = matches
+  applyModal.show = true
+}
+
+const pendingApply = ref<{ track: TrackSplit; changes: { added: Collaborator[], edited: Collaborator[] } } | null>(null)
+watch(showFirstSplitModal, (open) => {
+  if (!open && pendingApply.value) {
+    const { track, changes } = pendingApply.value
+    pendingApply.value = null
+    offerApplyToIsrcMatches(track, changes)
+  }
+})
+
+const handleApplyConfirm = (trackIds: string[]) => {
+  const chosen = applyModal.matches.filter(m => trackIds.includes(m.trackId))
+  const track = release.tracks.find(t => t.trackName === applyModal.sourceTrackName)
+  if (track && chosen.length) applySplitsToMatches(track, chosen)
+  applyModal.show = false
+}
+
 const handleBatchSave = (trackId: string, changes: { added: Collaborator[], edited: Collaborator[], deleted: string[] }) => {
   const track = release.tracks.find(t => t.trackId === trackId)
   if (!track) return
@@ -718,6 +797,10 @@ const handleBatchSave = (trackId: string, changes: { added: Collaborator[], edit
   // Check if this is the first split being saved on the release
   const isFirstSplit = !releaseHadSplitsBefore && track.splits.length > 0 && !hasShownFirstSplitModal.value
   
+  // Same-ISRC tracks elsewhere? Offer to apply there too (after the first-split modal, if that shows)
+  if (isFirstSplit) pendingApply.value = { track, changes }
+  else offerApplyToIsrcMatches(track, changes)
+
   // Show first split modal if this is the first one, otherwise show toast
   if (isFirstSplit) {
     hasShownFirstSplitModal.value = true
@@ -989,6 +1072,27 @@ const handleCancelUnsavedChanges = () => {
     &:hover { color: var(--blue); }
   }
 
+  &__heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+  }
+
+  &__help {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: $font-satoshi;
+    font-size: $text-sm;
+    font-weight: 500;
+    color: var(--purple);
+    text-decoration: none;
+    white-space: nowrap;
+
+    &:hover { text-decoration: underline; }
+  }
+
   &__title {
     font-size: 1.25rem;
     font-weight: 700;
@@ -1008,6 +1112,7 @@ const handleCancelUnsavedChanges = () => {
   }
 
   &__legend-item {
+    white-space: nowrap;
     display: flex;
     align-items: center;
     gap: 0.375rem;
@@ -1023,6 +1128,7 @@ const handleCancelUnsavedChanges = () => {
     &--yours { background: var(--split-yours); }
     &--collab { background: var(--split-confirmed); }
     &--pending { background: var(--split-pending); }
+    &--verification { background: var(--split-verification); }
     &--unclaimed { background: var(--split-unclaimed); }
   }
 

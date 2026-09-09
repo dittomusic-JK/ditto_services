@@ -34,6 +34,15 @@
       </div>
       <p class="ats__collab-line">
         Email: <span class="ats__collab-email">{{ split.email }}</span>
+        <!-- Edit email sits right beside the address (unclaimed only) -->
+        <button
+          v-if="split.status === 'unclaimed'"
+          class="ats__inline-btn"
+          aria-label="Edit email"
+          @click="$emit('edit-email', split)"
+        >
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.04 3.63l3.33 3.33-9.84 9.84-4.03.7.7-4.03z"/><path d="M14.17 2.5a2.36 2.36 0 0 1 3.33 3.33l-1.17 1.17-3.33-3.33z"/></svg>
+        </button>
         <button
           v-if="split.hasAccount === false"
           class="ats__unreg-btn"
@@ -68,7 +77,11 @@
       </p>
       <p v-else-if="split.status === 'verification'" class="ats__status ats__status--verification">
         <span class="ats__dot ats__dot--verification"></span>
-        Verification required
+        Requires verification
+        <!-- Mobile stand-in for the web hover tooltip -->
+        <button class="ats__inline-btn ats__inline-btn--status" aria-label="What does requires verification mean?" @click="$emit('verification-info')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 7V11M8 5V5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
       </p>
       <p v-else-if="split.status === 'rejected'" class="ats__status ats__status--rejected">
         <span class="ats__dot ats__dot--rejected"></span>
@@ -116,6 +129,8 @@ defineEmits<{
   'copy-from': []
   'copy-to': []
   'unregistered-info': []
+  'edit-email': [split: Collaborator]
+  'verification-info': []
 }>()
 
 // Web SplitsEditor semantics:
@@ -318,6 +333,20 @@ const hasPendingChange = (split: Collaborator): boolean =>
     &--unclaimed { background: $color-orange-500; }
     &--verification { background: var(--split-verification); }
     &--rejected { background: var(--error); }
+  }
+
+  &__inline-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-left: 0.25rem;
+    border-radius: 9999px;
+    color: var(--brand-secondary);
+    vertical-align: middle;
+
+    &--status { color: inherit; opacity: 0.85; }
   }
 
   &__placeholder {

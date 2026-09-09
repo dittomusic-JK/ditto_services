@@ -91,7 +91,10 @@
         <span v-else class="sr__val" :class="{ 'sr__val--error-struck': status === 'rejected' || isDeleted }">{{ share }}</span>
         <span class="sr__pct" :class="{ 'sr__pct--error': shareExceeds100 || status === 'rejected' || isDeleted }" :style="status === 'rejected' || isDeleted ? 'text-decoration: line-through' : ''">%</span>
       </div>
-      <p v-if="(isEditable || isEditingShare) && shareExceeds100" class="sr__exceed">Exceeds 100%</p>
+      <p v-if="(isEditable || isEditingShare) && shareExceeds100" class="sr__exceed" role="alert">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Total {{ projectedTotal }}%
+      </p>
       <div v-if="isEditingShare" class="sr__share-actions">
         <button @click="applyShareEdit" :disabled="shareExceeds100 || localShare === share" class="sr__share-apply">Apply</button>
         <button @click="cancelShareEdit" class="sr__share-cancel">Cancel</button>
@@ -211,7 +214,10 @@
           <span v-else class="sr__val">{{ share }}</span>
           <span class="sr__pct" :class="{ 'sr__pct--error': shareExceeds100 }">%</span>
         </div>
-        <p v-if="isEditable && shareExceeds100" class="sr__exceed">Exceeds 100%</p>
+        <p v-if="isEditable && shareExceeds100" class="sr__exceed" role="alert">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Total {{ projectedTotal }}%
+      </p>
       </div>
     </div>
 
@@ -320,9 +326,8 @@ watch(() => props.isEditable, (newVal, oldVal) => {
 })
 
 // Inline validation: check if share exceeds 100%
-const shareExceeds100 = computed(() => {
-  return props.currentTotalShare + (localShare.value || 0) > 100
-})
+const projectedTotal = computed(() => props.currentTotalShare + (localShare.value || 0))
+const shareExceeds100 = computed(() => projectedTotal.value > 100)
 
 // Check if there's a pending change (originalShare differs from current share)
 // A share change worth surfacing: either staged (not yet saved) or saved and
@@ -720,11 +725,22 @@ const emitUpdate = () => {
 }
 
 .sr__exceed {
-  font-size: 10px;
-  color: var(--error);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #b91c1c;
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
   font-family: $font-satoshi;
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
   white-space: nowrap;
+
+  svg { flex-shrink: 0; }
 }
 
 .sr__share-actions {

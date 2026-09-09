@@ -1,6 +1,11 @@
 <template>
   <div class="ars">
     <p class="ars__intro">Add &amp; edit royalty splits to automatically share the money you earn from this release with your collaborators.</p>
+    <!-- Permanent FAQ entry point — the onboarding popup only shows once -->
+    <a href="https://support.dittomusic.com/en/collections/royalty-splits" target="_blank" rel="noopener" class="ars__help">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Need help with splits?
+    </a>
 
     <!-- Release card -->
     <div class="ars__card">
@@ -42,6 +47,7 @@
         <span class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--collab"></span>Collaborators</span>
         <span v-if="isLabelServices" class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--unclaimed"></span>Unclaimed</span>
         <span v-else class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--pending"></span>Pending</span>
+        <span class="ars__legend-item"><span class="ars__legend-dot ars__legend-dot--verification"></span>Requires verification</span>
       </div>
     </div>
 
@@ -244,6 +250,19 @@ const trackRowClass = (t: TrackSplit): string => {
     &--collab { background: var(--success); }
     &--pending { background: $color-amber-500; }
     &--unclaimed { background: $color-orange-500; }
+    &--verification { background: var(--split-verification); }
+  }
+
+  &__help {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0.25rem 0 1rem;
+    font-size: $text-sm;
+    font-weight: 500;
+    color: var(--brand-secondary);
+    text-decoration: none;
+    font-family: $font-satoshi;
   }
 
   &__tracks-title {

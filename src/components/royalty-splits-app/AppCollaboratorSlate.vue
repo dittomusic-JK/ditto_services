@@ -82,7 +82,10 @@
           <input v-model.number="localShare" type="number" min="0" max="100" class="acs__input acs__input--share" />
           <span class="acs__suffix">%</span>
         </div>
-        <p v-if="shareError" class="acs__error">{{ shareError }}</p>
+        <p v-if="shareError" class="acs__error acs__error--pill">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {{ shareError }}
+        </p>
       </div>
       <button v-if="otherTracksCount > 0" class="acs__apply" @click="applyToAll = !applyToAll">
         <span class="acs__check" :class="{ 'acs__check--on': applyToAll }">
@@ -174,7 +177,7 @@ const emailError = computed(() => {
 
 const shareError = computed(() => {
   if (props.shareHidden) return ''
-  if ((localShare.value || 0) + props.otherShare > 100) return 'Total splits cannot exceed 100%'
+  if ((localShare.value || 0) + props.otherShare > 100) return `Total ${(localShare.value || 0) + props.otherShare}% — splits can't exceed 100%`
   return ''
 })
 
@@ -333,6 +336,18 @@ const confirm = () => {
     color: var(--error);
     font-family: $font-satoshi;
     margin-top: 0.375rem;
+
+    &--pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-weight: 600;
+      color: #b91c1c;
+      background: rgba(220, 38, 38, 0.08);
+      border: 1px solid rgba(220, 38, 38, 0.25);
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+    }
   }
 
   &__apply {

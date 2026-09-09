@@ -33,10 +33,21 @@ export interface TrackSplit {
   userShare: number
 }
 
+/** A track on another release in the account that shares an ISRC with one of ours (BA-136) */
+export interface IsrcMatch {
+  releaseId: string
+  releaseTitle: string
+  trackId: string
+  trackName: string
+  existingSplits: number
+}
+
 export interface Release {
   id: string
   title: string
   artwork: string
   accountHolder: string
   tracks: TrackSplit[]
+  /** Same-ISRC tracks elsewhere in the catalogue, keyed by our trackId */
+  isrcMatches?: Record<string, IsrcMatch[]>
 }

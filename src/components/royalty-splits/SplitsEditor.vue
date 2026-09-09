@@ -75,6 +75,15 @@
       </button>
     </div>
 
+    <!-- Over-allocation: shown inline the moment the total passes 100%, save stays disabled -->
+    <div v-if="sharesExceed100" class="se__over" role="alert">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="se__over-icon"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div>
+        <p class="se__over-title">Total is {{ currentTotalShare }}% — splits can't exceed 100%</p>
+        <p class="se__over-desc">Reduce one or more shares by {{ currentTotalShare - 100 }}% before saving. Your own share is what's left after collaborators.</p>
+      </div>
+    </div>
+
     <!-- Action buttons -->
     <div class="se__bar" :class="{ 'se__bar--rls': isRLS }">
       <div class="se__bar-left">
@@ -98,10 +107,6 @@
           </svg>
           Save Splits
         </button>
-        <div v-if="sharesExceed100" class="se__save-tip">
-          Total splits cannot exceed 100%. Adjust the splits before saving.
-          <div class="se__save-tip-arrow" />
-        </div>
       </div>
     </div>
   </div>
@@ -571,7 +576,6 @@ const handleClose = () => {
   &__save-wrap {
     position: relative;
 
-    &:hover > .se__save-tip { opacity: 1; }
   }
 
   &__save-btn {
@@ -592,31 +596,32 @@ const handleClose = () => {
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
-  &__save-tip {
-    position: absolute;
-    bottom: 100%;
-    right: 0;
-    margin-bottom: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background: var(--blue);
-    color: #fff;
-    font-size: $text-xs;
+  &__over {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    margin: 0.75rem 0 0.25rem;
+    padding: 0.75rem 0.875rem;
     border-radius: $radius-lg;
-    width: 12rem;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 0.15s;
-    pointer-events: none;
-    z-index: 20;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: rgba(220, 38, 38, 0.06);
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    color: #b91c1c;
   }
 
-  &__save-tip-arrow {
-    position: absolute;
-    top: 100%;
-    right: 1.5rem;
-    border: 4px solid transparent;
-    border-top-color: var(--blue);
+  &__over-icon { flex-shrink: 0; margin-top: 1px; }
+
+  &__over-title {
+    font-family: $font-satoshi;
+    font-size: $text-sm;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  &__over-desc {
+    font-size: $text-xs;
+    margin-top: 0.15rem;
+    color: #991b1b;
+    opacity: 0.9;
   }
 }
 </style>
