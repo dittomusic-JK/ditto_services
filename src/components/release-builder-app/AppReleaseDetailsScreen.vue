@@ -41,8 +41,8 @@
         </span>
       </button>
 
-      <p v-if="form.aiDisclosure === 'partial'" class="ard__ai-hint">Tick "Created with AI" on any credit in each track's credits — a track with none ticked has no AI content.</p>
-      <p v-else-if="form.aiDisclosure === 'full'" class="ard__ai-hint">Every credit on this release will be marked as created with AI automatically.</p>
+      <p v-if="form.aiDisclosure === 'partial'" class="ard__ai-hint">Set the AI level on each credit in Track Credits — No AI, Partly AI or Fully AI. Credits start as No AI.</p>
+      <p v-else-if="form.aiDisclosure === 'full'" class="ard__ai-hint">Every credit on this release will be set to Fully AI automatically.</p>
       <p v-else-if="visited && !form.aiDisclosure" class="ard__ai-error">Please declare whether this release uses AI.</p>
     </div>
 

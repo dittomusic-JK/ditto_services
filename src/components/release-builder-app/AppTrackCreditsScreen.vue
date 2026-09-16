@@ -1,6 +1,6 @@
 <template>
-  <!-- Mobile Track Credits: each credit line carries "Created with AI" on a
-       partially-AI release; entirely-AI locks every line on; Not AI hides it. -->
+  <!-- Mobile Track Credits: each credit carries an AI level (No / Partly / Fully AI) on a
+       partially-AI release; entirely-AI locks every credit to Fully AI; Not AI hides it. -->
   <div class="atc">
     <div class="atc__head">
       <button class="atc__back" @click="$emit('back')" aria-label="Back">
@@ -14,11 +14,11 @@
 
     <div v-if="form.aiDisclosure === 'partial'" class="atc__banner">
       <span class="atc__banner-dot"></span>
-      <span>Partially AI — tick <b>Created with AI</b> on any credit that was. Leave the rest unticked.</span>
+      <span>Partially AI — set the <b>AI level</b> on each credit. They start as No AI.</span>
     </div>
     <div v-else-if="form.aiDisclosure === 'full'" class="atc__banner atc__banner--locked">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      <span>Entirely AI — every credit is marked as created with AI.</span>
+      <span>Entirely AI — every credit is set to Fully AI.</span>
     </div>
 
     <div v-for="credit in track.credits" :key="credit.key" class="atc__credit">
@@ -31,20 +31,33 @@
         <span class="atc__value" :class="{ 'atc__value--empty': !credit.role }">{{ credit.role || 'Select role' }}</span>
       </div>
 
-      <!-- Created with AI -->
-      <button
-        v-if="showAi"
-        class="atc__ai"
-        :class="{ 'atc__ai--locked': locked }"
-        :disabled="locked"
-        @click="credit.ai = !credit.ai"
-      >
-        <span class="atc__box" :class="{ 'atc__box--on': locked || credit.ai }">
-          <svg v-if="locked || credit.ai" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        </span>
-        Created with AI
-        <svg v-if="locked" class="atc__lock" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      </button>
+      <!-- AI level (replaces the checkbox): a list row that opens an inline picker -->
+      <template v-if="showAi">
+        <button
+          class="atc__field atc__field--chev atc__field--btn"
+          :class="{ 'atc__field--locked': locked }"
+          :disabled="locked"
+          @click="openPicker = openPicker === credit.key ? null : credit.key"
+        >
+          <span class="atc__label">AI</span>
+          <span class="atc__value" :class="{ 'atc__value--ai': !locked && credit.ai !== 'none' }">{{ locked ? 'Fully AI' : levelLabel(credit.ai) }}</span>
+          <svg v-if="locked" class="atc__lock" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </button>
+        <div v-if="openPicker === credit.key && !locked" class="atc__picker">
+          <button
+            v-for="opt in aiLevels"
+            :key="opt.value"
+            class="atc__opt"
+            :class="{ 'atc__opt--on': credit.ai === opt.value }"
+            @click="credit.ai = opt.value; openPicker = null"
+          >
+            <span class="atc__radio" :class="{ 'atc__radio--on': credit.ai === opt.value }">
+              <svg v-if="credit.ai === opt.value" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+            </span>
+            {{ opt.label }}
+          </button>
+        </div>
+      </template>
     </div>
 
     <button class="atc__add">
@@ -59,11 +72,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { AppBuilderForm, AppBuilderTrack } from '../../views/ReleaseBuilderAppView.vue'
+import { computed, ref } from 'vue'
+import type { AppBuilderForm, AppBuilderTrack, CreditAiLevel } from '../../views/ReleaseBuilderAppView.vue'
 
 const props = defineProps<{ form: AppBuilderForm; track: AppBuilderTrack }>()
 defineEmits<{ back: []; save: [] }>()
+
+const aiLevels: { value: CreditAiLevel; label: string }[] = [
+  { value: 'none', label: 'No AI' },
+  { value: 'partial', label: 'Partly AI' },
+  { value: 'full', label: 'Fully AI' },
+]
+const levelLabel = (v: CreditAiLevel) => aiLevels.find(o => o.value === v)?.label ?? 'No AI'
+const openPicker = ref<string | null>(null)
 
 const showAi = computed(() => props.form.aiDisclosure === 'partial' || props.form.aiDisclosure === 'full')
 const locked = computed(() => props.form.aiDisclosure === 'full')
@@ -116,5 +137,53 @@ const locked = computed(() => props.form.aiDisclosure === 'full')
   &__back-btn, &__save { flex: 1; height: 52px; border-radius: 9999px; font-size: 17px; font-weight: 500; }
   &__back-btn { background: var(--light-grey); color: var(--blue); }
   &__save { background: var(--brand-primary); color: #fff; }
+
+  &__field--btn {
+    width: 100%;
+    text-align: left;
+    background: none;
+    font: inherit;
+    color: inherit;
+  }
+
+  &__field--locked { opacity: 0.7; }
+
+  &__value--ai { color: var(--brand-secondary); }
+
+  &__lock { color: var(--ditto-grey); margin-left: 0.25rem; }
+
+  &__picker {
+    margin: 0.25rem 1.25rem 0.75rem;
+    border: 1px solid var(--faded-grey);
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+
+  &__opt {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.75rem 0.875rem;
+    font-size: $text-sm;
+    text-align: left;
+    color: var(--blue);
+    border-bottom: 1px solid var(--faded-grey);
+    &:last-child { border-bottom: 0; }
+    &--on { color: var(--brand-secondary); font-weight: 600; }
+  }
+
+  &__radio {
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 9999px;
+    border: 2px solid var(--faded-grey);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
+    &--on { background: var(--brand-secondary); border-color: var(--brand-secondary); }
+  }
 }
 </style>

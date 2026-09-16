@@ -44,12 +44,15 @@ import { reactive, ref } from 'vue'
 import AppReleaseDetailsScreen from '../components/release-builder-app/AppReleaseDetailsScreen.vue'
 import AppTrackCreditsScreen from '../components/release-builder-app/AppTrackCreditsScreen.vue'
 
+export type CreditAiLevel = 'none' | 'partial' | 'full'
+
 export interface AppBuilderCredit {
   key: string
   category: string
   name: string
   role?: string
-  ai: boolean
+  /** Per-credit AI level; partially-AI releases set it, entirely-AI locks it to 'full' */
+  ai: CreditAiLevel
 }
 export interface AppBuilderTrack {
   number: number
@@ -80,10 +83,10 @@ const form = reactive<AppBuilderForm>({
       number: 1,
       title: 'My Big Day',
       credits: [
-        { key: 'composer', category: 'Composer', name: 'James Keane', ai: false },
-        { key: 'songwriter', category: 'Songwriter', name: 'James Keane', role: 'Lyricist', ai: false },
-        { key: 'production', category: 'Production/Engineer', name: 'James Keane', role: 'Producer', ai: false },
-        { key: 'performer', category: 'Performer', name: 'James Keane', role: 'Lead Vocals', ai: false },
+        { key: 'composer', category: 'Composer', name: 'James Keane', ai: 'none' },
+        { key: 'songwriter', category: 'Songwriter', name: 'James Keane', role: 'Lyricist', ai: 'none' },
+        { key: 'production', category: 'Production/Engineer', name: 'James Keane', role: 'Producer', ai: 'none' },
+        { key: 'performer', category: 'Performer', name: 'James Keane', role: 'Lead Vocals', ai: 'none' },
       ],
     },
   ],
