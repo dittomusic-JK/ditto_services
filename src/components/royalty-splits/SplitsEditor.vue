@@ -8,18 +8,20 @@
     @keydown.enter.ctrl.prevent="handleSave"
     @keydown.enter.meta.prevent="handleSave"
   >
-    <!-- User's split summary -->
+    <!-- Account holder's share: the number people come here to check, so it leads -->
     <div class="se__summary" :class="{ 'se__summary--rls': isRLS }">
-      <div>
-        <span class="se__summary-label" :class="{ 'se__summary-label--rls': isRLS }">Your Split:</span>
-        <div class="se__summary-row">
-          <p class="se__summary-val" :class="{ 'se__summary-val--rls': isRLS }">{{ activeUserShare }}%</p>
-          <template v-if="(hasPendingChanges || hasStagedEdit) && activeUserShare !== currentUserShare">
-            <span class="se__summary-sep">&gt;</span>
-            <p class="se__summary-pending">{{ currentUserShare }}%</p>
-            <span class="se__summary-pending-tag">{{ hasStagedEdit ? 'Unsaved' : 'Pending' }}</span>
-          </template>
-        </div>
+      <span class="se__summary-label" :class="{ 'se__summary-label--rls': isRLS }">Your share</span>
+      <div class="se__summary-row">
+        <p class="se__summary-val" :class="{ 'se__summary-val--rls': isRLS }">{{ activeUserShare }}%</p>
+        <template v-if="(hasPendingChanges || hasStagedEdit) && activeUserShare !== currentUserShare">
+          <svg class="se__summary-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <p class="se__summary-pending">{{ currentUserShare }}%</p>
+          <span class="se__summary-pending-tag">{{ hasStagedEdit ? 'Unsaved' : 'Pending' }}</span>
+        </template>
+      </div>
+      <!-- Share of the whole: yours vs collaborators, at a glance -->
+      <div class="se__summary-bar" aria-hidden="true">
+        <span class="se__summary-bar-fill" :style="{ width: Math.max(0, Math.min(100, currentUserShare)) + '%' }"></span>
       </div>
     </div>
 
@@ -415,18 +417,26 @@ const handleClose = () => {
     background: var(--rls-bg-elevated);
   }
 
-  /* ---- Summary ---- */
+  /* ---- Summary: your share, prominent ---- */
   &__summary {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding-bottom: 1rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+    padding: 0.875rem 1rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: $radius-lg;
+    background: #fff;
+    border: 1px solid var(--faded-grey);
+    border-left: 4px solid var(--split-yours);
 
-    @include sm { gap: 1rem; }
+    &--rls { background: var(--rls-bg); border-color: var(--rls-border, rgba(255, 255, 255, 0.12)); border-left-color: var(--split-yours); }
   }
 
   &__summary-label {
-    font-size: $text-xs;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     font-family: $font-satoshi;
     color: var(--ditto-grey);
 
@@ -435,34 +445,59 @@ const handleClose = () => {
 
   &__summary-row {
     display: flex;
-    align-items: center;
-    gap: 0.375rem;
+    align-items: baseline;
+    gap: 0.5rem;
   }
 
   &__summary-val {
-    font-size: $text-sm;
-    font-weight: 700;
+    font-size: 1.75rem;
+    line-height: 1.1;
+    font-weight: 900;
+    letter-spacing: -0.03em;
     font-family: $font-satoshi;
     color: var(--split-yours);
   }
 
-  &__summary-sep {
+  &__summary-arrow {
     color: var(--ditto-grey);
-    font-family: $font-satoshi;
-    font-size: $text-sm;
+    align-self: center;
   }
 
   &__summary-pending {
-    font-size: $text-sm;
-    font-weight: 700;
+    font-size: 1.75rem;
+    line-height: 1.1;
+    font-weight: 900;
+    letter-spacing: -0.03em;
     color: $color-amber-500;
     font-family: $font-satoshi;
   }
 
   &__summary-pending-tag {
-    font-size: 10px;
-    color: $color-amber-500;
+    align-self: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: $color-amber-600;
+    background: rgba(245, 158, 11, 0.12);
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
     font-family: $font-satoshi;
+  }
+
+  &__summary-bar {
+    height: 6px;
+    margin-top: 0.5rem;
+    border-radius: 999px;
+    background: var(--split-collab, #00d346);
+    opacity: 0.9;
+    overflow: hidden;
+  }
+
+  &__summary-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--split-yours);
+    transition: width 0.3s ease;
   }
 
   /* ---- Header ---- */
