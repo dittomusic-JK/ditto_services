@@ -427,9 +427,8 @@ const handleClose = () => {
     border-radius: $radius-lg;
     background: #fff;
     border: 1px solid var(--faded-grey);
-    border-left: 4px solid var(--split-yours);
 
-    &--rls { background: var(--rls-bg); border-color: var(--rls-border, rgba(255, 255, 255, 0.12)); border-left-color: var(--split-yours); }
+    &--rls { background: var(--rls-bg); border-color: var(--rls-border, rgba(255, 255, 255, 0.12)); }
   }
 
   &__summary-label {
