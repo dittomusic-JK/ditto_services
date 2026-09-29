@@ -19,10 +19,6 @@
           <span class="se__summary-pending-tag">{{ hasStagedEdit ? 'Unsaved' : 'Pending' }}</span>
         </template>
       </div>
-      <!-- Share of the whole: yours vs collaborators, at a glance -->
-      <div class="se__summary-bar" aria-hidden="true">
-        <span class="se__summary-bar-fill" :style="{ width: Math.max(0, Math.min(100, currentUserShare)) + '%' }"></span>
-      </div>
     </div>
 
     <!-- Splits section header -->
@@ -480,23 +476,6 @@ const handleClose = () => {
     padding: 0.125rem 0.5rem;
     border-radius: 999px;
     font-family: $font-satoshi;
-  }
-
-  &__summary-bar {
-    height: 6px;
-    margin-top: 0.5rem;
-    border-radius: 999px;
-    background: var(--split-collab, #00d346);
-    opacity: 0.9;
-    overflow: hidden;
-  }
-
-  &__summary-bar-fill {
-    display: block;
-    height: 100%;
-    border-radius: 999px;
-    background: var(--split-yours);
-    transition: width 0.3s ease;
   }
 
   /* ---- Header ---- */
