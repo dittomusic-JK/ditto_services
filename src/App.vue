@@ -24,6 +24,10 @@
             to="/release-builder-app" 
             class="app__link" :class="{ 'app__link--active': $route.path === '/release-builder-app' }"
           >Release Builder (App)</router-link>
+          <router-link 
+            to="/release-sheet-app" 
+            class="app__link" :class="{ 'app__link--active': $route.path === '/release-sheet-app' }"
+          >Release Sheet (App)</router-link>
         </div>
       </div>
     </nav>

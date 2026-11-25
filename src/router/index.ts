@@ -31,6 +31,11 @@ const router = createRouter({
       path: '/release-builder-app',
       name: 'release-builder-app',
       component: () => import('../views/ReleaseBuilderAppView.vue')
+    },
+    {
+      path: '/release-sheet-app',
+      name: 'release-sheet-app',
+      component: () => import('../views/ReleaseSheetAppView.vue')
     }
   ]
 })
