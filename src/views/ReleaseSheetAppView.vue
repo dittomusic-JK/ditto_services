@@ -66,7 +66,6 @@
                 </button>
                 <button class="btn btn--dark btn--share"><span v-html="icons.share"></span>Share</button>
               </div>
-              <p class="actions__hint">{{ copied === opt.id ? 'Link copied' : 'Tap the link to copy it' }}</p>
               <button class="btn btn--primary"><span v-html="icons.filter"></span>Filter in analytics</button>
               <button class="btn btn--dark"><span v-html="icons.splits"></span>Royalty Splits</button>
             </div>
@@ -118,7 +117,7 @@ import { ref } from 'vue'
 
 const options = [
   { id: 'now', tag: 'Current', name: 'Three stacked buttons', note: 'Royalty Splits is the fourth button and sits off screen.' },
-  { id: 'a', tag: 'Option A', name: 'Smartlink row', note: 'Link in a box with tap to copy, small Share beside it. Two actions become one row.' },
+  { id: 'a', tag: 'Option A', name: 'Smartlink row', note: 'Link in a box with a copy button, small Share beside it. Two actions become one row.' },
   { id: 'b', tag: 'Option B', name: 'Action tiles', note: 'Four equal tiles. Room for a status line on each, and a 2 x 3 grid later.' },
   { id: 'c', tag: 'Option C', name: 'Action list', note: 'Settings-style rows. Scales to any number of actions, shows split status inline.' },
 ]
@@ -225,7 +224,6 @@ $tint: #f9f9ff;
 .actions {
   padding: 8px 13px 0;
   &__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: $grey; margin: 2px 2px 5px; }
-  &__hint { font-size: 10px; color: $grey; margin: 4px 2px 8px; }
 }
 
 .btn {
